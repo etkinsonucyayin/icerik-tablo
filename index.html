@@ -123,7 +123,9 @@ function initFilters(){
  const gradeSelect = document.getElementById("grade");
  const courseSelect = document.getElementById("course");
 
- let grades = [...new Set(data.map(d=>d["SINIF"]))].filter(Boolean);
+ let grades = [...new Set(data.map(d => d["SINIF"]))]
+  .filter(Boolean)
+  .sort((a, b) => Number(a) - Number(b));
  gradeSelect.innerHTML = "<option value=''>Seçiniz</option>";
  grades.forEach(g=>{
    gradeSelect.innerHTML += `<option value="${g}">${g}</option>`;
@@ -186,4 +188,5 @@ function closeModal(){
 </body>
 
 </html>
+
 
