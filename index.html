@@ -1,297 +1,464 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>E-İçerik Tablosu</title>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  h2 { margin: 0 0 12px; }
-  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-  label { font-weight: 600; }
-  select, button, input { padding: 6px 8px; }
-  table { border-collapse: collapse; width: 100%; margin-top: 10px; table-layout: fixed; }
-  th, td { border: 1px solid #ccc; padding: 6px; font-size: 13px; vertical-align: top; }
-  th { background: #f2f2f2; }
-  td { word-wrap: break-word; }
-  .ai-btn { background: #0070f3; color: white; border: none; cursor: pointer; padding: 6px 10px; border-radius: 4px; }
-  .ai-btn:hover { background: #0051aa; }
-  .ai-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .muted { color: #666; font-size: 12px; }
 
-  .modal {
-    position: fixed; inset: 0; background: rgba(0,0,0,.5);
-    display: none; align-items: center; justify-content: center;
-    padding: 16px;
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0b1220;
+    --card:#0f1b32;
+    --text:#eaf0ff;
+    --muted:#a9b6d6;
+    --line:rgba(255,255,255,.10);
+    --line2:rgba(255,255,255,.08);
+    --accent:#4f8cff;
+    --ok:#22c55e;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+    --radius:16px;
   }
-  .modal-content {
-    background: white; width: min(900px, 96vw);
-    padding: 16px 16px 12px; max-height: 85vh; overflow: auto;
-    border-radius: 10px;
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 20% 0%, rgba(79,140,255,.25), transparent 60%),
+      radial-gradient(900px 500px at 80% 10%, rgba(34,197,94,.18), transparent 55%),
+      var(--bg);
+    color:var(--text);
   }
-  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .modal h3 { margin: 0; }
-  .modal pre { white-space: pre-wrap; margin: 12px 0; }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
-  .btn { padding: 8px 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 6px; }
-  .btn:hover { background: #f6f6f6; }
+  .wrap{ max-width:1200px; margin:28px auto; padding:0 16px 36px; }
+  .header{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:16px; }
+  .title{ display:flex; flex-direction:column; gap:6px; }
+  .title h1{ margin:0; font-size:28px; letter-spacing:.2px; }
+  .title p{ margin:0; color:var(--muted); font-size:13px; }
+
+  .badge{
+    font-size:12px; padding:6px 10px; border-radius:999px;
+    border:1px solid var(--line2); color:var(--muted);
+    background:rgba(255,255,255,.04); white-space:nowrap;
+  }
+
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+
+  .controls{
+    padding:14px;
+    background:rgba(255,255,255,.03);
+    border-bottom:1px solid var(--line);
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 12px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .control-left{ display:flex; flex-wrap:wrap; gap:10px 12px; align-items:center; }
+  .group{ display:flex; gap:8px; align-items:center; }
+  label{ font-size:13px; color:var(--muted); font-weight:600; }
+
+  select, input{
+    appearance:none;
+    background:rgba(255,255,255,.06);
+    border:1px solid var(--line2);
+    color:var(--text);
+    padding:9px 10px;
+    border-radius:12px;
+    outline:none;
+    font-size:13px;
+    min-width:180px;
+  }
+  input{ min-width:260px; }
+  select:disabled, input:disabled{ opacity:.6; }
+
+  .table-wrap{ width:100%; overflow:auto; }
+  table{ width:100%; border-collapse:separate; border-spacing:0; min-width:980px; }
+  thead th{
+    position:sticky; top:0; z-index:2;
+    background:rgba(15,27,50,.92);
+    backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--line);
+    text-align:left;
+    padding:12px 12px;
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:.2px;
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:12px 12px;
+    border-bottom:1px solid var(--line2);
+    vertical-align:top;
+    font-size:13px;
+    word-break:break-word;
+  }
+  tbody tr:nth-child(2n){ background:rgba(255,255,255,.02); }
+  tbody tr:hover{ background:rgba(79,140,255,.10); }
+
+  .col-sira{ width:70px; color:var(--muted); }
+  .col-unit{ width:180px; }
+  .col-kaz{ width:320px; }
+  .col-icerik{ width:170px; }
+  .col-ai{ width:80px; text-align:right; }
+
+  .ai-btn{
+    border:1px solid rgba(79,140,255,.45);
+    background: linear-gradient(135deg, rgba(79,140,255,.95), rgba(79,140,255,.55));
+    color:white;
+    font-weight:700;
+    padding:8px 10px;
+    border-radius:12px;
+    cursor:pointer;
+    width:56px;
+    box-shadow:0 8px 18px rgba(79,140,255,.22);
+  }
+  .ai-btn:hover{ filter:brightness(1.04); }
+  .ai-btn:disabled{ opacity:.7; cursor:not-allowed; }
+
+  .hint{ font-size:12px; color:var(--muted); padding:10px 14px 0; }
+
+  /* Modal */
+  .modal{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:50;
+  }
+  .panel{
+    width:min(900px, 98vw);
+    max-height:88vh;
+    overflow:auto;
+    border-radius:18px;
+    border:1px solid var(--line);
+    background: linear-gradient(180deg, rgba(15,27,50,.98), rgba(13,23,43,.98));
+    box-shadow:var(--shadow);
+  }
+  .panel-head{
+    padding:14px 14px 10px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .panel-head h3{ margin:0; font-size:15px; }
+  .panel-body{ padding:14px; }
+  pre{ margin:0; white-space:pre-wrap; line-height:1.45; font-size:13px; }
+  .panel-actions{
+    padding:12px 14px 14px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+  }
+  .btn{
+    border:1px solid var(--line2);
+    background:rgba(255,255,255,.06);
+    color:var(--text);
+    font-weight:700;
+    padding:9px 12px;
+    border-radius:12px;
+    cursor:pointer;
+  }
+  .btn:hover{ background:rgba(255,255,255,.09); }
+  .btn-primary{
+    border-color: rgba(34,197,94,.45);
+    background: linear-gradient(135deg, rgba(34,197,94,.95), rgba(34,197,94,.55));
+    box-shadow:0 8px 18px rgba(34,197,94,.20);
+  }
+
+  @media (max-width:720px){
+    input{ min-width:220px; }
+    select{ min-width:160px; }
+    .header{ align-items:flex-start; flex-direction:column; }
+  }
 </style>
 </head>
 
 <body>
-
-<h2>E-İçerik Tablosu</h2>
-
-<div class="controls">
-  <div>
-    <label for="grade">Sınıf:</label>
-    <select id="grade">
-      <option value="">Yükleniyor…</option>
-    </select>
-  </div>
-
-  <div>
-    <label for="course">Ders:</label>
-    <select id="course" disabled>
-      <option value="">Önce sınıf seçiniz</option>
-    </select>
-  </div>
-
-  <div class="muted" id="status"></div>
-</div>
-
-<table id="table">
-  <thead>
-    <tr>
-      <th style="width:60px;">SIRA</th>
-      <th style="width:120px;">ÜNİTE</th>
-      <th style="width:260px;">KAZANIM</th>
-      <th style="width:140px;">İÇERİK</th>
-      <th> AÇIKLAMA </th>
-      <th style="width:60px;">AI</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <div class="modal-head">
-      <h3 id="modalTitle">AI</h3>
-      <button class="btn" onclick="closeModal()">Kapat</button>
+  <div class="wrap">
+    <div class="header">
+      <div class="title">
+        <h1>E-İçerik Tablosu</h1>
+        <p>Sınıf ve ders seç, tabloyu filtrele, AI ile senaryo üret.</p>
+      </div>
+      <div class="badge" id="status">Veriler yükleniyor…</div>
     </div>
-    <pre id="modalText"></pre>
-    <div class="modal-actions">
-      <button class="btn" onclick="copyModal()">Kopyala</button>
-      <button class="btn" onclick="closeModal()">Kapat</button>
+
+    <div class="card">
+      <div class="controls">
+        <div class="control-left">
+          <div class="group">
+            <label for="grade">Sınıf</label>
+            <select id="grade">
+              <option value="">Yükleniyor…</option>
+            </select>
+          </div>
+
+          <div class="group">
+            <label for="course">Ders</label>
+            <select id="course" disabled>
+              <option value="">Önce sınıf seçiniz</option>
+            </select>
+          </div>
+
+          <div class="group">
+            <label for="q">Ara</label>
+            <input id="q" type="search" placeholder="Kazanım / Açıklama içinde ara…" disabled />
+          </div>
+        </div>
+
+        <div class="badge" id="count">0 kayıt</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-sira">SIRA</th>
+              <th class="col-unit">ÜNİTE</th>
+              <th class="col-kaz">KAZANIM</th>
+              <th class="col-icerik">İÇERİK</th>
+              <th>AÇIKLAMA</th>
+              <th class="col-ai">AI</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="hint">İpucu: “Ara” kutusu seçilen sınıf+ders listesini anlık filtreler.</div>
     </div>
   </div>
-</div>
+
+  <div class="modal" id="modal" onclick="backdropClose(event)">
+    <div class="panel" role="dialog" aria-modal="true">
+      <div class="panel-head">
+        <h3 id="modalTitle">AI</h3>
+        <button class="btn" onclick="closeModal()">Kapat</button>
+      </div>
+      <div class="panel-body">
+        <pre id="modalText"></pre>
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-primary" onclick="copyModal()">Kopyala</button>
+        <button class="btn" onclick="closeModal()">Kapat</button>
+      </div>
+    </div>
+  </div>
 
 <script>
-let data = [];
-let busyKey = "";
+  let data = [];
+  let filtered = [];
+  let busyKey = "";
 
-const statusEl = document.getElementById("status");
-const gradeSelect = document.getElementById("grade");
-const courseSelect = document.getElementById("course");
-const tbody = document.querySelector("#table tbody");
+  const statusEl = document.getElementById("status");
+  const countEl = document.getElementById("count");
+  const gradeSelect = document.getElementById("grade");
+  const courseSelect = document.getElementById("course");
+  const qInput = document.getElementById("q");
+  const tbody = document.getElementById("tbody");
 
-statusEl.textContent = "Veriler yükleniyor…";
+  fetch("content.csv")
+    .then(r => r.text())
+    .then(text => {
+      data = parseCSV(text, ";");
+      data = data.filter(d => d["SINIF"] && String(d["SINIF"]).trim().match(/^\d+$/));
+      statusEl.textContent = `Toplam: ${data.length} kayıt`;
+      initFilters();
+    })
+    .catch(err => { statusEl.textContent = "CSV yüklenemedi: " + String(err); });
 
-fetch("content.csv")
-  .then(r => r.text())
-  .then(text => {
-    data = parseCSV(text, ";");
+  function parseCSV(text, delimiter) {
+    const rows = [];
+    let row = [];
+    let cur = "";
+    let inQuotes = false;
 
-    // Bozuk/boş satırları temizle: SINIF sadece sayı olsun
-    data = data.filter(d => d["SINIF"] && String(d["SINIF"]).trim().match(/^\d+$/));
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      const next = text[i + 1];
 
-    statusEl.textContent = `Toplam kayıt: ${data.length}`;
-    initFilters();
-  })
-  .catch(err => {
-    statusEl.textContent = "CSV yüklenemedi: " + String(err);
-  });
-
-function parseCSV(text, delimiter) {
-  // Tırnak içindeki delimiter ve satır sonlarını bozmayan CSV parser
-  const rows = [];
-  let row = [];
-  let cur = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    const next = text[i + 1];
-
-    if (c === '"') {
-      if (inQuotes && next === '"') { // "" -> "
-        cur += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
+      if (c === '"') {
+        if (inQuotes && next === '"') { cur += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+        continue;
       }
-      continue;
+
+      if (!inQuotes && c === delimiter) { row.push(cur); cur = ""; continue; }
+
+      if (!inQuotes && (c === "\n" || c === "\r")) {
+        if (c === "\r" && next === "\n") i++;
+        row.push(cur); rows.push(row);
+        row = []; cur = "";
+        continue;
+      }
+
+      cur += c;
     }
 
-    if (!inQuotes && c === delimiter) {
-      row.push(cur);
-      cur = "";
-      continue;
-    }
+    if (cur.length > 0 || row.length > 0) { row.push(cur); rows.push(row); }
 
-    if (!inQuotes && (c === "\n" || c === "\r")) {
-      if (c === "\r" && next === "\n") i++; // \r\n
-      row.push(cur);
-      rows.push(row);
-      row = [];
-      cur = "";
-      continue;
-    }
-
-    cur += c;
+    const headers = (rows[0] || []).map(h => (h ?? "").trim());
+    return rows.slice(1).map(cols => {
+      const obj = {};
+      headers.forEach((h, idx) => (obj[h] = (cols[idx] ?? "").trim()));
+      return obj;
+    });
   }
 
-  if (cur.length > 0 || row.length > 0) {
-    row.push(cur);
-    rows.push(row);
-  }
+  function initFilters() {
+    const grades = [...new Set(data.map(d => String(d["SINIF"]).trim()))]
+      .filter(Boolean)
+      .sort((a,b) => Number(a) - Number(b));
 
-  const headers = (rows[0] || []).map(h => (h ?? "").trim());
-  return rows.slice(1).map(cols => {
-    const obj = {};
-    headers.forEach((h, idx) => (obj[h] = (cols[idx] ?? "").trim()));
-    return obj;
-  });
-}
+    gradeSelect.innerHTML = `<option value="">Seçiniz</option>` +
+      grades.map(g => `<option value="${g}">${g}</option>`).join("");
 
-function initFilters() {
-  // Sınıfları küçükten büyüğe sırala
-  const grades = [...new Set(data.map(d => String(d["SINIF"]).trim()))]
-    .filter(Boolean)
-    .sort((a, b) => Number(a) - Number(b));
-
-  gradeSelect.innerHTML = `<option value="">Seçiniz</option>` +
-    grades.map(g => `<option value="${g}">${g}</option>`).join("");
-
-  gradeSelect.onchange = () => {
-    const selectedGrade = gradeSelect.value;
-    courseSelect.disabled = !selectedGrade;
-    courseSelect.value = "";
-
-    if (!selectedGrade) {
-      courseSelect.innerHTML = `<option value="">Önce sınıf seçiniz</option>`;
+    gradeSelect.onchange = () => {
+      const g = gradeSelect.value;
+      courseSelect.disabled = !g;
+      qInput.disabled = true;
+      qInput.value = "";
       tbody.innerHTML = "";
+      countEl.textContent = "0 kayıt";
+
+      if (!g) {
+        courseSelect.innerHTML = `<option value="">Önce sınıf seçiniz</option>`;
+        return;
+      }
+
+      const courses = [...new Set(
+        data.filter(d => String(d["SINIF"]).trim() === g)
+            .map(d => (d["DERS ADI"] || "").trim())
+            .filter(Boolean)
+      )].sort((a,b) => a.localeCompare(b, "tr"));
+
+      courseSelect.innerHTML = `<option value="">Seçiniz</option>` +
+        courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+    };
+
+    courseSelect.onchange = () => {
+      qInput.value = "";
+      qInput.disabled = !(gradeSelect.value && courseSelect.value);
+      applyFilterAndRender();
+    };
+
+    qInput.oninput = applyFilterAndRender;
+  }
+
+  function applyFilterAndRender() {
+    const grade = gradeSelect.value;
+    const course = courseSelect.value;
+    const q = (qInput.value || "").trim().toLowerCase();
+
+    if (!grade || !course) {
+      filtered = [];
+      tbody.innerHTML = "";
+      countEl.textContent = "0 kayıt";
       return;
     }
 
-    const courses = [...new Set(
-      data.filter(d => String(d["SINIF"]).trim() === selectedGrade)
-          .map(d => (d["DERS ADI"] || "").trim())
-          .filter(Boolean)
-    )].sort((a, b) => a.localeCompare(b, "tr"));
+    filtered = data.filter(d =>
+      String(d["SINIF"]).trim() === grade &&
+      (d["DERS ADI"] || "").trim() === course
+    );
 
-    courseSelect.innerHTML = `<option value="">Seçiniz</option>` +
-      courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+    if (q) {
+      filtered = filtered.filter(d => {
+        const kaz = (d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "").toLowerCase();
+        const acik = (d["AÇIKLAMA"] || "").toLowerCase();
+        return kaz.includes(q) || acik.includes(q);
+      });
+    }
 
-    tbody.innerHTML = "";
-  };
-
-  courseSelect.onchange = renderTable;
-}
-
-function renderTable() {
-  const grade = gradeSelect.value;
-  const course = courseSelect.value;
-
-  tbody.innerHTML = "";
-
-  if (!grade || !course) return;
-
-  const rows = data.filter(d =>
-    String(d["SINIF"]).trim() === grade &&
-    (d["DERS ADI"] || "").trim() === course
-  );
-
-  rows.forEach(d => {
-    const key = `${d["SINIF"]}-${d["DERS ADI"]}-${d["SIRA NO"]}`;
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${escapeHtml(d["SIRA NO"] || "")}</td>
-      <td>${escapeHtml(d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "")}</td>
-      <td>${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
-      <td>${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
-      <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
-      <td><button class="ai-btn" data-key="${escapeHtml(key)}">AI</button></td>
-    `;
-
-    tr.querySelector("button").onclick = () => generateAI(d, key);
-    tbody.appendChild(tr);
-  });
-}
-
-async function generateAI(row, key) {
-  if (busyKey) return; // aynı anda tek istek
-
-  busyKey = key;
-  const btn = document.querySelector(`button[data-key="${cssEscape(key)}"]`);
-  if (btn) { btn.disabled = true; btn.textContent = "…"; }
-
-  try {
-    const r = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(row)
-    });
-
-    const txt = await r.text();
-    let res;
-    try { res = JSON.parse(txt); }
-    catch { res = { title: "Sunucu Yanıtı", text: txt }; }
-
-    // Hata olsa da modalda göster
-    document.getElementById("modalTitle").innerText =
-      res.title || (r.ok ? "AI Senaryosu" : "AI Hatası");
-
-    document.getElementById("modalText").innerText =
-      res.text || res.error || JSON.stringify(res, null, 2);
-
-    document.getElementById("modal").style.display = "flex";
-  } catch (e) {
-    document.getElementById("modalTitle").innerText = "Bağlantı Hatası";
-    document.getElementById("modalText").innerText = String(e);
-    document.getElementById("modal").style.display = "flex";
-  } finally {
-    busyKey = "";
-    if (btn) { btn.disabled = false; btn.textContent = "AI"; }
+    countEl.textContent = `${filtered.length} kayıt`;
+    renderTable(filtered);
   }
-}
 
-function closeModal() {
-  document.getElementById("modal").style.display = "none";
-}
+  function renderTable(rows) {
+    tbody.innerHTML = "";
+    rows.forEach(d => {
+      const key = `${d["SINIF"]}-${d["DERS ADI"]}-${d["SIRA NO"]}`;
 
-function copyModal() {
-  const text = document.getElementById("modalText").innerText || "";
-  navigator.clipboard.writeText(text);
-}
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="col-sira">${escapeHtml(d["SIRA NO"] || "")}</td>
+        <td class="col-unit">${escapeHtml(d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "")}</td>
+        <td class="col-kaz">${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
+        <td class="col-icerik">${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
+        <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
+        <td class="col-ai"><button class="ai-btn" data-key="${escapeHtml(key)}">AI</button></td>
+      `;
+      tr.querySelector("button").onclick = () => generateAI(d, key);
+      tbody.appendChild(tr);
+    });
+  }
 
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+  async function generateAI(row, key) {
+    if (busyKey) return;
+    busyKey = key;
 
-// querySelector için key içinde özel karakter olursa kaçırmak gerekir
-function cssEscape(str) {
-  return String(str).replace(/["\\]/g, "\\$&");
-}
+    const btn = document.querySelector(`button[data-key="${cssEscape(key)}"]`);
+    if (btn) { btn.disabled = true; btn.textContent = "…"; }
+
+    try {
+      const r = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row)
+      });
+
+      const txt = await r.text();
+      let res;
+      try { res = JSON.parse(txt); }
+      catch { res = { title: "Sunucu Yanıtı", text: txt }; }
+
+      document.getElementById("modalTitle").innerText =
+        res.title || (r.ok ? "AI Senaryosu" : "AI Hatası");
+
+      document.getElementById("modalText").innerText =
+        res.text || res.error || JSON.stringify(res, null, 2);
+
+      document.getElementById("modal").style.display = "flex";
+    } catch (e) {
+      document.getElementById("modalTitle").innerText = "Bağlantı Hatası";
+      document.getElementById("modalText").innerText = String(e);
+      document.getElementById("modal").style.display = "flex";
+    } finally {
+      busyKey = "";
+      if (btn) { btn.disabled = false; btn.textContent = "AI"; }
+    }
+  }
+
+  function backdropClose(e){ if (e.target && e.target.id === "modal") closeModal(); }
+  function closeModal(){ document.getElementById("modal").style.display = "none"; }
+  function copyModal(){
+    const text = document.getElementById("modalText").innerText || "";
+    navigator.clipboard.writeText(text);
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function cssEscape(str){ return String(str).replace(/["\\]/g, "\\$&"); }
 </script>
-
 </body>
 </html>
