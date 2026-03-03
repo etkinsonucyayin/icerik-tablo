@@ -188,6 +188,37 @@
     box-shadow:0 8px 18px rgba(34,197,94,.20);
   }
 
+  /* ✅ Loading Overlay */
+  #loadingOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(10,20,40,0.75);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+  }
+  .loading-box{
+    text-align:center;
+    padding:30px 40px;
+    background:linear-gradient(180deg,#0f1b32,#0c1628);
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .spinner{
+    width:48px;
+    height:48px;
+    border:4px solid rgba(255,255,255,.2);
+    border-top:4px solid #4f8cff;
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+    margin:0 auto 15px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #loadingText{ font-size:14px; color:#eaf0ff; }
+
   @media (max-width:720px){
     input{ min-width:220px; }
     select{ min-width:160px; }
@@ -252,6 +283,14 @@
     </div>
   </div>
 
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div id="loadingText">Senaryo oluşturuluyor...</div>
+    </div>
+  </div>
+
   <!-- Result modal -->
   <div class="modal" id="modal" onclick="backdropClose(event)">
     <div class="panel" role="dialog" aria-modal="true">
@@ -265,6 +304,8 @@
       <div class="panel-actions">
         <button class="btn btn-primary" onclick="copyModal()">Kopyala</button>
         <button class="btn" onclick="downloadWord()">Word indir</button>
+        <button class="btn" onclick="openLastScenario()">Son Senaryo</button>
+        <button class="btn" onclick="clearScenarioHistory()">Geçmişi Sil</button>
         <button class="btn" onclick="closeModal()">Kapat</button>
       </div>
     </div>
@@ -298,6 +339,73 @@
   const qInput = document.getElementById("q");
   const tbody = document.getElementById("tbody");
 
+  // ---- Scenario history (kaybolmasın) ----
+  const HISTORY_KEY = "icerik_tablo_scenario_history_v1";
+
+  function saveScenarioToHistory(payload){
+    const max = 10;
+    const item = { ...payload, savedAt: new Date().toISOString() };
+
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch {}
+    arr.unshift(item);
+    arr = arr.slice(0, max);
+
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
+  }
+
+  function getLastScenario(){
+    try {
+      const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      return arr[0] || null;
+    } catch { return null; }
+  }
+
+  function openLastScenario(){
+    const last = getLastScenario();
+    if (!last) { alert("Kayıtlı senaryo bulunamadı."); return; }
+    window.__lastRowForWord = last.rowMeta || null;
+    document.getElementById("modalTitle").innerText = last.title || "Son Senaryo";
+    document.getElementById("modalText").innerText = last.text || "";
+    document.getElementById("modal").style.display = "flex";
+  }
+
+  function clearScenarioHistory(){
+    if (!confirm("Kaydedilmiş senaryo geçmişi silinsin mi?")) return;
+    localStorage.removeItem(HISTORY_KEY);
+    alert("Geçmiş silindi.");
+  }
+
+  // ---- Loading overlay ----
+  let loadingInterval = null;
+  function showLoading(){
+    const overlay = document.getElementById("loadingOverlay");
+    const textEl = document.getElementById("loadingText");
+    const messages = [
+      "Kazanım analiz ediliyor...",
+      "İçerik türü belirleniyor...",
+      "Senaryo tasarlanıyor...",
+      "Storyline akışı hazırlanıyor...",
+      "SCORM/EBA notları ekleniyor..."
+    ];
+    let i = 0;
+    textEl.innerText = messages[0];
+
+    if (loadingInterval) clearInterval(loadingInterval);
+    loadingInterval = setInterval(() => {
+      i = (i + 1) % messages.length;
+      textEl.innerText = messages[i];
+    }, 1200);
+
+    overlay.style.display = "flex";
+  }
+  function hideLoading(){
+    const overlay = document.getElementById("loadingOverlay");
+    overlay.style.display = "none";
+    if (loadingInterval) clearInterval(loadingInterval);
+  }
+
+  // ---- CSV load ----
   fetch("content.csv")
     .then(r => r.text())
     .then(text => {
@@ -463,19 +571,14 @@
 <title>${escapeHtml(title)}</title>
 </head>
 <body style="font-family:Calibri,Arial,sans-serif; font-size:11pt;">
-
 <h2>${escapeHtml(title)}</h2>
-
 <p><strong>Sınıf:</strong> ${escapeHtml(sinif)}</p>
 <p><strong>Ders:</strong> ${escapeHtml(ders)}</p>
 <p><strong>Ünite:</strong> ${escapeHtml(unite)}</p>
 <p><strong>Kazanım:</strong> ${escapeHtml(kazanim)}</p>
-
 <hr>
-
 <p><strong>Senaryo Dokümanı:</strong></p>
 <pre style="white-space:pre-wrap; line-height:1.5;">${escapeHtml(text)}</pre>
-
 </body>
 </html>`;
 
@@ -559,6 +662,8 @@
     const btn = document.querySelector(`button[data-key="${cssEscape(key)}"]`);
     if (btn) { btn.disabled = true; btn.textContent = "…"; }
 
+    showLoading(); // ✅ bekleme ekranı
+
     try {
       const desc = String(row["AÇIKLAMA"] || "").trim();
       const contentType = String(row["E-İÇERİK TÜRÜ"] || "").toLowerCase();
@@ -576,18 +681,26 @@
 
       if (parts.length > 1) {
         // açıklamada birden fazla görev var: her birini seçenek yap
-        choices = parts.slice(0, 8).map((p, i) => ({ title: `Seçenek ${i+1}`, text: p }));
+        // başlıkları biraz daha anlamlı yapmaya çalış
+        choices = parts.slice(0, 8).map((p, i) => {
+          const lp = p.toLowerCase();
+          let t = `Seçenek ${i+1}`;
+          if (lp.includes("video") || lp.includes("belgesel") || lp.includes("film")) t = "Video / Belgesel";
+          else if (lp.includes("simülasyon") || lp.includes("simulasyon")) t = "Simülasyon";
+          else if (lp.includes("etkileşim") || lp.includes("interaktif") || lp.includes("oyun")) t = "Etkileşimli / Oyun";
+          return ({ title: t, text: p });
+        });
       } else if (hasVideo && (hasInteractive || hasSimulation)) {
         // hem video hem etkileşim/simülasyon: seçim sor
         choices = [
-          { title: "Video / Belgesel Senaryosu", text: "Video/Belgesel formatında üret." },
-          { title: hasSimulation ? "Simülasyon Senaryosu" : "Etkileşimli / Oyun Senaryosu", text: hasSimulation ? "Simülasyon formatında üret." : "Etkileşimli/Oyun formatında üret." }
+          { title: "Video / Belgesel", text: "Video/Belgesel formatında üret." },
+          { title: hasSimulation ? "Simülasyon" : "Etkileşimli / Oyun", text: hasSimulation ? "Simülasyon formatında üret." : "Etkileşimli/Oyun formatında üret." }
         ];
       } else if (!hasVideo && !hasInteractive && !hasSimulation) {
         // belirsiz: öğretmene sor
         choices = [
           { title: "Video", text: "Video formatında üret." },
-          { title: "Etkileşimli", text: "Etkileşimli/Oyun formatında üret." },
+          { title: "Etkileşimli / Oyun", text: "Etkileşimli/Oyun formatında üret." },
           { title: "Simülasyon", text: "Simülasyon formatında üret." }
         ];
       } else {
@@ -598,10 +711,14 @@
       // 4) seçim gerekiyorsa sor
       let forced = null;
       if (choices.length > 0) {
+        hideLoading(); // seçim penceresinde overlay kapansın
         const idx = await showChoiceModal(choices);
+        showLoading(); // seçim sonrası tekrar göster
+
         if (idx === null || typeof idx === "undefined") {
           if (btn) { btn.disabled = false; btn.textContent = "AI"; }
           busyKey = "";
+          hideLoading();
           return;
         }
 
@@ -634,6 +751,13 @@
       try { res = JSON.parse(txt); }
       catch { res = { title: "Sunucu Yanıtı", text: txt }; }
 
+      // ✅ otomatik kaydet (kapanırsa kaybolmasın)
+      saveScenarioToHistory({
+        title: res.title || "E-İçerik Senaryo Dokümanı",
+        text: res.text || res.error || "",
+        rowMeta: row
+      });
+
       document.getElementById("modalTitle").innerText =
         res.title || (r.ok ? "AI Senaryosu" : "AI Hatası");
 
@@ -649,6 +773,7 @@
     } finally {
       busyKey = "";
       if (btn) { btn.disabled = false; btn.textContent = "AI"; }
+      hideLoading(); // ✅ bekleme ekranını kapat
     }
   }
 
