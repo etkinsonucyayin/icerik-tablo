@@ -57,17 +57,67 @@ th { background:#f2f2f2; }
 let data = [];
 
 fetch("content.csv")
-.then(r => r.text())
-.then(text => {
- const rows = text.split("\n").map(r => r.split(";"));
- const headers = rows[0];
- data = rows.slice(1).map(r => {
-   let obj = {};
-   headers.forEach((h,i)=> obj[h.trim()] = r[i]);
-   return obj;
- });
- initFilters();
-});
+  .then(r => r.text())
+  .then(text => {
+    data = parseCSV(text, ";");
+    // Boş/bozuk satırları ayıkla
+    data = data.filter(d => d["SINIF"] && String(d["SINIF"]).trim().match(/^\d+$/));
+    initFilters();
+  });
+
+function parseCSV(text, delimiter) {
+  // Basit ama doğru çalışan CSV parser (tırnak içindeki ; ve satır sonlarını bozmadan okur)
+  const rows = [];
+  let row = [];
+  let cur = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
+
+    if (c === '"') {
+      if (inQuotes && next === '"') { // "" -> "
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && c === delimiter) {
+      row.push(cur);
+      cur = "";
+      continue;
+    }
+
+    if (!inQuotes && (c === "\n" || c === "\r")) {
+      // Windows \r\n kontrolü
+      if (c === "\r" && next === "\n") i++;
+      row.push(cur);
+      rows.push(row);
+      row = [];
+      cur = "";
+      continue;
+    }
+
+    cur += c;
+  }
+
+  // son hücre
+  if (cur.length > 0 || row.length > 0) {
+    row.push(cur);
+    rows.push(row);
+  }
+
+  const headers = rows[0].map(h => h.trim());
+  return rows.slice(1).map(cols => {
+    const obj = {};
+    headers.forEach((h, idx) => (obj[h] = (cols[idx] ?? "").trim()));
+    return obj;
+  });
+}
 
 function initFilters(){
  const gradeSelect = document.getElementById("grade");
@@ -136,3 +186,4 @@ function closeModal(){
 </body>
 
 </html>
+
