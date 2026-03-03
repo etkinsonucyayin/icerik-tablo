@@ -80,6 +80,14 @@
   input{ min-width:260px; }
   select:disabled, input:disabled{ opacity:.6; }
 
+  /* ✅ Dropdown listeleri okunur olsun */
+  select{ color: #eaf0ff !important; }
+  select option{
+    background:#0f1b32 !important;
+    color:#ffffff !important;
+  }
+  select option[value=""]{ color: #a9b6d6 !important; }
+
   .table-wrap{ width:100%; overflow:auto; }
   table{ width:100%; border-collapse:separate; border-spacing:0; min-width:980px; }
   thead th{
@@ -162,6 +170,7 @@
     display:flex;
     justify-content:flex-end;
     gap:10px;
+    flex-wrap:wrap;
   }
   .btn{
     border:1px solid var(--line2);
@@ -254,6 +263,7 @@
       </div>
       <div class="panel-actions">
         <button class="btn btn-primary" onclick="copyModal()">Kopyala</button>
+        <button class="btn" onclick="downloadWord()">Word indir</button>
         <button class="btn" onclick="closeModal()">Kapat</button>
       </div>
     </div>
@@ -275,13 +285,17 @@
     .then(r => r.text())
     .then(text => {
       data = parseCSV(text, ";");
+
+      // Bozuk/boş satırları temizle: SINIF sadece sayı olsun
       data = data.filter(d => d["SINIF"] && String(d["SINIF"]).trim().match(/^\d+$/));
+
       statusEl.textContent = `Toplam: ${data.length} kayıt`;
       initFilters();
     })
     .catch(err => { statusEl.textContent = "CSV yüklenemedi: " + String(err); });
 
   function parseCSV(text, delimiter) {
+    // Tırnak içindeki delimiter ve satır sonlarını bozmayan CSV parser
     const rows = [];
     let row = [];
     let cur = "";
@@ -320,6 +334,7 @@
   }
 
   function initFilters() {
+    // Sınıfları küçükten büyüğe sırala
     const grades = [...new Set(data.map(d => String(d["SINIF"]).trim()))]
       .filter(Boolean)
       .sort((a,b) => Number(a) - Number(b));
@@ -408,6 +423,7 @@
   }
 
   async function generateAI(row, key) {
+    window.__lastRowForWord = row; // Word indirirken Sınıf/Ders/Ünite/Kazanım için
     if (busyKey) return;
     busyKey = key;
 
@@ -445,9 +461,65 @@
 
   function backdropClose(e){ if (e.target && e.target.id === "modal") closeModal(); }
   function closeModal(){ document.getElementById("modal").style.display = "none"; }
+
   function copyModal(){
     const text = document.getElementById("modalText").innerText || "";
     navigator.clipboard.writeText(text);
+  }
+
+  // ✅ Word indir (düzenlenebilir .doc)
+function downloadWord(){
+  const title = (document.getElementById("modalTitle").innerText || "AI_Senaryosu").trim();
+  const text = (document.getElementById("modalText").innerText || "").trim();
+  const row = window.__lastRowForWord || {};
+
+  const sinif = row["SINIF"] || "";
+  const ders = row["DERS ADI"] || "";
+  const unite = row["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "";
+  const kazanim = row["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "";
+
+  const safeTitle = sanitizeFileName(title);
+
+  const html =
+`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${escapeHtml(title)}</title>
+</head>
+<body style="font-family:Calibri,Arial,sans-serif; font-size:11pt;">
+
+<h2>${escapeHtml(title)}</h2>
+
+<p><strong>Sınıf:</strong> ${escapeHtml(sinif)}</p>
+<p><strong>Ders:</strong> ${escapeHtml(ders)}</p>
+<p><strong>Ünite:</strong> ${escapeHtml(unite)}</p>
+<p><strong>Kazanım:</strong> ${escapeHtml(kazanim)}</p>
+
+<hr>
+
+<p><strong>Senaryo:</strong></p>
+<pre style="white-space:pre-wrap; line-height:1.5;">${escapeHtml(text)}</pre>
+
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: "application/msword" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${safeTitle}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1200);
+}
+
+  function sanitizeFileName(name){
+    return String(name)
+      .replace(/[\\/:*?"<>|]+/g, "-")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80) || "AI_Senaryosu";
   }
 
   function escapeHtml(str) {
@@ -458,6 +530,7 @@
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#039;");
   }
+
   function cssEscape(str){ return String(str).replace(/["\\]/g, "\\$&"); }
 </script>
 </body>
