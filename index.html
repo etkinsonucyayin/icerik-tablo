@@ -59,7 +59,7 @@ let data = [];
 fetch("content.csv")
 .then(r => r.text())
 .then(text => {
- const rows = text.split("\n").map(r => r.split(","));
+ const rows = text.split("\n").map(r => r.split(";"));
  const headers = rows[0];
  data = rows.slice(1).map(r => {
    let obj = {};
@@ -134,4 +134,5 @@ function closeModal(){
 </script>
 
 </body>
+
 </html>
