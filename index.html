@@ -2,71 +2,120 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>E-İçerik Tablosu</title>
 <style>
-body { font-family: Arial; padding:20px; }
-select, button { padding:6px; margin:4px; }
-table { border-collapse: collapse; width:100%; margin-top:20px; }
-th, td { border:1px solid #ccc; padding:6px; font-size:13px; }
-th { background:#f2f2f2; }
-.ai-btn { background:#0070f3; color:white; border:none; cursor:pointer; }
-.ai-btn:hover { background:#0051aa; }
-.modal {
- position:fixed; inset:0; background:rgba(0,0,0,.5);
- display:none; align-items:center; justify-content:center;
-}
-.modal-content {
- background:white; width:90%; max-width:800px;
- padding:20px; max-height:80vh; overflow:auto;
-}
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  h2 { margin: 0 0 12px; }
+  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  label { font-weight: 600; }
+  select, button, input { padding: 6px 8px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; table-layout: fixed; }
+  th, td { border: 1px solid #ccc; padding: 6px; font-size: 13px; vertical-align: top; }
+  th { background: #f2f2f2; }
+  td { word-wrap: break-word; }
+  .ai-btn { background: #0070f3; color: white; border: none; cursor: pointer; padding: 6px 10px; border-radius: 4px; }
+  .ai-btn:hover { background: #0051aa; }
+  .ai-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .muted { color: #666; font-size: 12px; }
+
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    display: none; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal-content {
+    background: white; width: min(900px, 96vw);
+    padding: 16px 16px 12px; max-height: 85vh; overflow: auto;
+    border-radius: 10px;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .modal h3 { margin: 0; }
+  .modal pre { white-space: pre-wrap; margin: 12px 0; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .btn { padding: 8px 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 6px; }
+  .btn:hover { background: #f6f6f6; }
 </style>
 </head>
+
 <body>
 
 <h2>E-İçerik Tablosu</h2>
 
-<label>Sınıf:</label>
-<select id="grade"></select>
+<div class="controls">
+  <div>
+    <label for="grade">Sınıf:</label>
+    <select id="grade">
+      <option value="">Yükleniyor…</option>
+    </select>
+  </div>
 
-<label>Ders:</label>
-<select id="course"></select>
+  <div>
+    <label for="course">Ders:</label>
+    <select id="course" disabled>
+      <option value="">Önce sınıf seçiniz</option>
+    </select>
+  </div>
+
+  <div class="muted" id="status"></div>
+</div>
 
 <table id="table">
-<thead>
-<tr>
-<th>SIRA</th>
-<th>ÜNİTE</th>
-<th>KAZANIM</th>
-<th>İÇERİK</th>
-<th>AÇIKLAMA</th>
-<th>AI</th>
-</tr>
-</thead>
-<tbody></tbody>
+  <thead>
+    <tr>
+      <th style="width:60px;">SIRA</th>
+      <th style="width:120px;">ÜNİTE</th>
+      <th style="width:260px;">KAZANIM</th>
+      <th style="width:140px;">İÇERİK</th>
+      <th> AÇIKLAMA </th>
+      <th style="width:60px;">AI</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
 </table>
 
 <div class="modal" id="modal">
-<div class="modal-content">
-<h3 id="modalTitle"></h3>
-<pre id="modalText" style="white-space:pre-wrap"></pre>
-<button onclick="closeModal()">Kapat</button>
-</div>
+  <div class="modal-content">
+    <div class="modal-head">
+      <h3 id="modalTitle">AI</h3>
+      <button class="btn" onclick="closeModal()">Kapat</button>
+    </div>
+    <pre id="modalText"></pre>
+    <div class="modal-actions">
+      <button class="btn" onclick="copyModal()">Kopyala</button>
+      <button class="btn" onclick="closeModal()">Kapat</button>
+    </div>
+  </div>
 </div>
 
 <script>
 let data = [];
+let busyKey = "";
+
+const statusEl = document.getElementById("status");
+const gradeSelect = document.getElementById("grade");
+const courseSelect = document.getElementById("course");
+const tbody = document.querySelector("#table tbody");
+
+statusEl.textContent = "Veriler yükleniyor…";
 
 fetch("content.csv")
   .then(r => r.text())
   .then(text => {
     data = parseCSV(text, ";");
-    // Boş/bozuk satırları ayıkla
+
+    // Bozuk/boş satırları temizle: SINIF sadece sayı olsun
     data = data.filter(d => d["SINIF"] && String(d["SINIF"]).trim().match(/^\d+$/));
+
+    statusEl.textContent = `Toplam kayıt: ${data.length}`;
     initFilters();
+  })
+  .catch(err => {
+    statusEl.textContent = "CSV yüklenemedi: " + String(err);
   });
 
 function parseCSV(text, delimiter) {
-  // Basit ama doğru çalışan CSV parser (tırnak içindeki ; ve satır sonlarını bozmadan okur)
+  // Tırnak içindeki delimiter ve satır sonlarını bozmayan CSV parser
   const rows = [];
   let row = [];
   let cur = "";
@@ -93,8 +142,7 @@ function parseCSV(text, delimiter) {
     }
 
     if (!inQuotes && (c === "\n" || c === "\r")) {
-      // Windows \r\n kontrolü
-      if (c === "\r" && next === "\n") i++;
+      if (c === "\r" && next === "\n") i++; // \r\n
       row.push(cur);
       rows.push(row);
       row = [];
@@ -105,13 +153,12 @@ function parseCSV(text, delimiter) {
     cur += c;
   }
 
-  // son hücre
   if (cur.length > 0 || row.length > 0) {
     row.push(cur);
     rows.push(row);
   }
 
-  const headers = rows[0].map(h => h.trim());
+  const headers = (rows[0] || []).map(h => (h ?? "").trim());
   return rows.slice(1).map(cols => {
     const obj = {};
     headers.forEach((h, idx) => (obj[h] = (cols[idx] ?? "").trim()));
@@ -119,74 +166,132 @@ function parseCSV(text, delimiter) {
   });
 }
 
-function initFilters(){
- const gradeSelect = document.getElementById("grade");
- const courseSelect = document.getElementById("course");
+function initFilters() {
+  // Sınıfları küçükten büyüğe sırala
+  const grades = [...new Set(data.map(d => String(d["SINIF"]).trim()))]
+    .filter(Boolean)
+    .sort((a, b) => Number(a) - Number(b));
 
- let grades = [...new Set(data.map(d => d["SINIF"]))]
-  .filter(Boolean)
-  .sort((a, b) => Number(a) - Number(b));
- gradeSelect.innerHTML = "<option value=''>Seçiniz</option>";
- grades.forEach(g=>{
-   gradeSelect.innerHTML += `<option value="${g}">${g}</option>`;
- });
+  gradeSelect.innerHTML = `<option value="">Seçiniz</option>` +
+    grades.map(g => `<option value="${g}">${g}</option>`).join("");
 
- gradeSelect.onchange = ()=>{
-   let selected = gradeSelect.value;
-   let courses = [...new Set(
-     data.filter(d=>d["SINIF"]==selected)
-         .map(d=>d["DERS ADI"])
-   )];
-   courseSelect.innerHTML = "<option value=''>Seçiniz</option>";
-   courses.forEach(c=>{
-     courseSelect.innerHTML += `<option value="${c}">${c}</option>`;
-   });
- };
+  gradeSelect.onchange = () => {
+    const selectedGrade = gradeSelect.value;
+    courseSelect.disabled = !selectedGrade;
+    courseSelect.value = "";
 
- courseSelect.onchange = renderTable;
+    if (!selectedGrade) {
+      courseSelect.innerHTML = `<option value="">Önce sınıf seçiniz</option>`;
+      tbody.innerHTML = "";
+      return;
+    }
+
+    const courses = [...new Set(
+      data.filter(d => String(d["SINIF"]).trim() === selectedGrade)
+          .map(d => (d["DERS ADI"] || "").trim())
+          .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, "tr"));
+
+    courseSelect.innerHTML = `<option value="">Seçiniz</option>` +
+      courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+
+    tbody.innerHTML = "";
+  };
+
+  courseSelect.onchange = renderTable;
 }
 
-function renderTable(){
- const grade = document.getElementById("grade").value;
- const course = document.getElementById("course").value;
- const tbody = document.querySelector("#table tbody");
- tbody.innerHTML = "";
+function renderTable() {
+  const grade = gradeSelect.value;
+  const course = courseSelect.value;
 
- data.filter(d=>d["SINIF"]==grade && d["DERS ADI"]==course)
- .forEach(d=>{
-   tbody.innerHTML += `
-   <tr>
-   <td>${d["SIRA NO"]}</td>
-   <td>${d["ÜNİTE/TEMA/ ÖĞRENME ALANI"]}</td>
-   <td>${d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"]}</td>
-   <td>${d["E-İÇERİK TÜRÜ"]}</td>
-   <td>${d["AÇIKLAMA"]}</td>
-   <td><button class="ai-btn" onclick='generateAI(${JSON.stringify(d)})'>AI</button></td>
-   </tr>`;
- });
+  tbody.innerHTML = "";
+
+  if (!grade || !course) return;
+
+  const rows = data.filter(d =>
+    String(d["SINIF"]).trim() === grade &&
+    (d["DERS ADI"] || "").trim() === course
+  );
+
+  rows.forEach(d => {
+    const key = `${d["SINIF"]}-${d["DERS ADI"]}-${d["SIRA NO"]}`;
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${escapeHtml(d["SIRA NO"] || "")}</td>
+      <td>${escapeHtml(d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "")}</td>
+      <td>${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
+      <td>${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
+      <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
+      <td><button class="ai-btn" data-key="${escapeHtml(key)}">AI</button></td>
+    `;
+
+    tr.querySelector("button").onclick = () => generateAI(d, key);
+    tbody.appendChild(tr);
+  });
 }
 
-function generateAI(row){
- fetch("/api/ai",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify(row)
- })
- .then(r=>r.json())
- .then(res=>{
-   document.getElementById("modalTitle").innerText = res.title;
-   document.getElementById("modalText").innerText = res.text;
-   document.getElementById("modal").style.display="flex";
- });
+async function generateAI(row, key) {
+  if (busyKey) return; // aynı anda tek istek
+
+  busyKey = key;
+  const btn = document.querySelector(`button[data-key="${cssEscape(key)}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
+
+  try {
+    const r = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(row)
+    });
+
+    const txt = await r.text();
+    let res;
+    try { res = JSON.parse(txt); }
+    catch { res = { title: "Sunucu Yanıtı", text: txt }; }
+
+    // Hata olsa da modalda göster
+    document.getElementById("modalTitle").innerText =
+      res.title || (r.ok ? "AI Senaryosu" : "AI Hatası");
+
+    document.getElementById("modalText").innerText =
+      res.text || res.error || JSON.stringify(res, null, 2);
+
+    document.getElementById("modal").style.display = "flex";
+  } catch (e) {
+    document.getElementById("modalTitle").innerText = "Bağlantı Hatası";
+    document.getElementById("modalText").innerText = String(e);
+    document.getElementById("modal").style.display = "flex";
+  } finally {
+    busyKey = "";
+    if (btn) { btn.disabled = false; btn.textContent = "AI"; }
+  }
 }
 
-function closeModal(){
- document.getElementById("modal").style.display="none";
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+function copyModal() {
+  const text = document.getElementById("modalText").innerText || "";
+  navigator.clipboard.writeText(text);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+// querySelector için key içinde özel karakter olursa kaçırmak gerekir
+function cssEscape(str) {
+  return String(str).replace(/["\\]/g, "\\$&");
 }
 </script>
 
 </body>
-
 </html>
-
-
