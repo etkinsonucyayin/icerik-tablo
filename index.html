@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>E-İçerik Tablosu</title>
+<style>
+body { font-family: Arial; padding:20px; }
+select, button { padding:6px; margin:4px; }
+table { border-collapse: collapse; width:100%; margin-top:20px; }
+th, td { border:1px solid #ccc; padding:6px; font-size:13px; }
+th { background:#f2f2f2; }
+.ai-btn { background:#0070f3; color:white; border:none; cursor:pointer; }
+.ai-btn:hover { background:#0051aa; }
+.modal {
+ position:fixed; inset:0; background:rgba(0,0,0,.5);
+ display:none; align-items:center; justify-content:center;
+}
+.modal-content {
+ background:white; width:90%; max-width:800px;
+ padding:20px; max-height:80vh; overflow:auto;
+}
+</style>
+</head>
+<body>
+
+<h2>E-İçerik Tablosu</h2>
+
+<label>Sınıf:</label>
+<select id="grade"></select>
+
+<label>Ders:</label>
+<select id="course"></select>
+
+<table id="table">
+<thead>
+<tr>
+<th>SIRA</th>
+<th>ÜNİTE</th>
+<th>KAZANIM</th>
+<th>İÇERİK</th>
+<th>AÇIKLAMA</th>
+<th>AI</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<div class="modal" id="modal">
+<div class="modal-content">
+<h3 id="modalTitle"></h3>
+<pre id="modalText" style="white-space:pre-wrap"></pre>
+<button onclick="closeModal()">Kapat</button>
+</div>
+</div>
+
+<script>
+let data = [];
+
+fetch("content.csv")
+.then(r => r.text())
+.then(text => {
+ const rows = text.split("\n").map(r => r.split(","));
+ const headers = rows[0];
+ data = rows.slice(1).map(r => {
+   let obj = {};
+   headers.forEach((h,i)=> obj[h.trim()] = r[i]);
+   return obj;
+ });
+ initFilters();
+});
+
+function initFilters(){
+ const gradeSelect = document.getElementById("grade");
+ const courseSelect = document.getElementById("course");
+
+ let grades = [...new Set(data.map(d=>d["SINIF"]))].filter(Boolean);
+ gradeSelect.innerHTML = "<option value=''>Seçiniz</option>";
+ grades.forEach(g=>{
+   gradeSelect.innerHTML += `<option value="${g}">${g}</option>`;
+ });
+
+ gradeSelect.onchange = ()=>{
+   let selected = gradeSelect.value;
+   let courses = [...new Set(
+     data.filter(d=>d["SINIF"]==selected)
+         .map(d=>d["DERS ADI"])
+   )];
+   courseSelect.innerHTML = "<option value=''>Seçiniz</option>";
+   courses.forEach(c=>{
+     courseSelect.innerHTML += `<option value="${c}">${c}</option>`;
+   });
+ };
+
+ courseSelect.onchange = renderTable;
+}
+
+function renderTable(){
+ const grade = document.getElementById("grade").value;
+ const course = document.getElementById("course").value;
+ const tbody = document.querySelector("#table tbody");
+ tbody.innerHTML = "";
+
+ data.filter(d=>d["SINIF"]==grade && d["DERS ADI"]==course)
+ .forEach(d=>{
+   tbody.innerHTML += `
+   <tr>
+   <td>${d["SIRA NO"]}</td>
+   <td>${d["ÜNİTE/TEMA/ ÖĞRENME ALANI"]}</td>
+   <td>${d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"]}</td>
+   <td>${d["E-İÇERİK TÜRÜ"]}</td>
+   <td>${d["AÇIKLAMA"]}</td>
+   <td><button class="ai-btn" onclick='generateAI(${JSON.stringify(d)})'>AI</button></td>
+   </tr>`;
+ });
+}
+
+function generateAI(row){
+ fetch("/api/ai",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify(row)
+ })
+ .then(r=>r.json())
+ .then(res=>{
+   document.getElementById("modalTitle").innerText = res.title;
+   document.getElementById("modalText").innerText = res.text;
+   document.getElementById("modal").style.display="flex";
+ });
+}
+
+function closeModal(){
+ document.getElementById("modal").style.display="none";
+}
+</script>
+
+</body>
+</html>
