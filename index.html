@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- PDF için (A4 yatay, çok sayfalı tablo) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
@@ -227,6 +226,31 @@
   @keyframes spin{ to{ transform:rotate(360deg); } }
   #loadingText{ font-size:14px; color:#eaf0ff; }
 
+  /* Geri Bildirim Butonu */
+  .feedback-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background: linear-gradient(135deg, #4f8cff, #3b5bdb);
+    color: white;
+    padding: 12px 22px;
+    border-radius: 50px;
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    z-index: 999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+  }
+  .feedback-btn:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.1);
+  }
+
   @media (max-width:720px){
     input{ min-width:220px; }
     select{ min-width:160px; }
@@ -294,7 +318,6 @@
     </div>
   </div>
 
-  <!-- Loading Overlay -->
   <div id="loadingOverlay">
     <div class="loading-box">
       <div class="spinner"></div>
@@ -302,7 +325,6 @@
     </div>
   </div>
 
-  <!-- Result modal -->
   <div class="modal" id="modal" onclick="backdropClose(event)">
     <div class="panel" role="dialog" aria-modal="true">
       <div class="panel-head">
@@ -322,7 +344,6 @@
     </div>
   </div>
 
-  <!-- Choice modal (Birden fazla içerik türü varsa) -->
   <div class="modal" id="choiceModal" onclick="choiceBackdropClose(event)">
     <div class="panel" style="width:520px; max-width:96vw;">
       <div class="panel-head">
@@ -336,7 +357,6 @@
     </div>
   </div>
 
-  <!-- Zaten var modal (Daha önce üretildiyse uyarır) -->
   <div class="modal" id="existModal" onclick="existBackdropClose(event)">
     <div class="panel" style="width:460px; max-width:96vw;">
       <div class="panel-head">
@@ -355,6 +375,25 @@
       </div>
     </div>
   </div>
+
+  <div class="modal" id="feedbackModal" onclick="feedbackBackdropClose(event)">
+    <div class="panel" style="width:700px; max-height:85vh;">
+      <div class="panel-head">
+        <h3>Görüş / Hata Bildir</h3>
+        <button class="btn" onclick="closeFeedbackModal()">Kapat</button>
+      </div>
+      <div class="panel-body" style="padding:0; height:600px; overflow:hidden;">
+        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScCQcqpkJNvyYIBcVwXCZzpZ6zy__r2y5JyQt-LtvPgEOH8Og/viewform?embedded=true" 
+                width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">
+          Yükleniyor…
+        </iframe>
+      </div>
+    </div>
+  </div>
+
+  <button class="feedback-btn" onclick="openFeedbackModal()">
+    <span>💬 Görüş / Hata Bildir</span>
+  </button>
 
 <script>
   // -------------------- State --------------------
@@ -911,6 +950,17 @@
     proceedWithGeneration(pendingRow, pendingKey);
   }
 
+  // -------------------- Feedback Modal Functions --------------------
+  function openFeedbackModal() {
+    document.getElementById("feedbackModal").style.display = "flex";
+  }
+  function closeFeedbackModal() {
+    document.getElementById("feedbackModal").style.display = "none";
+  }
+  function feedbackBackdropClose(e) {
+    if (e.target && e.target.id === "feedbackModal") closeFeedbackModal();
+  }
+
   // -------------------- AI generation --------------------
   
   // Ana Tıklama Yönlendiricisi
@@ -945,6 +995,7 @@
     try {
       const desc = String(row["AÇIKLAMA"] || "").trim();
       const contentType = String(row["E-İÇERİK TÜRÜ"] || "").toLowerCase();
+      // DÜZELTME: Noktalı virgülden dolayı oluşan kısa ve anlamsız parçaları (ör: "hazırlanır.") eler
       const parts = desc.split(/[\n;]+/).map(s => s.trim()).filter(s => s.length > 15);
 
       const hasVideo = /video|film|belgesel/i.test(desc) || /video|film|belgesel/i.test(contentType);
@@ -1053,4 +1104,3 @@
 </script>
 </body>
 </html>
-
