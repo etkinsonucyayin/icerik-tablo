@@ -585,22 +585,36 @@
     rows.forEach(d => {
       const key = `${d["SINIF"]}-${d["DERS ADI"]}-${d["SIRA NO"]}`;
       const tr = document.createElement("tr");
+
+      // CSV'deki "AI Senaryosu" sütununda "yok" yazıp yazmadığını kontrol ediyoruz
+      const aiDurumu = String(d["AI Senaryosu"] || "").trim().toLowerCase();
+      const aiPasifMi = (aiDurumu === "yok");
+
+      // Eğer "yok" ise butonu tıklanamaz (disabled) ve soluk yapıyoruz
+      const aiCellHTML = aiPasifMi
+        ? `<button class="ai-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Bu içerik için AI senaryosu oluşturulamaz">Yok</button>`
+        : `<button class="ai-btn" data-key="${escapeHtml(key)}">AI</button>`;
+
       tr.innerHTML = `
         <td class="col-sira">${escapeHtml(d["SIRA NO"] || "")}</td>
         <td class="col-unit">${escapeHtml(d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "")}</td>
         <td class="col-kaz">${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
         <td class="col-icerik">${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
         <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
-        <td class="col-ai"><button class="ai-btn" data-key="${escapeHtml(key)}">AI</button></td>
+        <td class="col-ai">${aiCellHTML}</td>
       `;
-      tr.querySelector("button").onclick = () => handleAIClick(d, key);
+      
+      // Eğer pasif değilse, butona tıklama (AI üretme) özelliğini ekle
+      if (!aiPasifMi) {
+        tr.querySelector("button").onclick = () => handleAIClick(d, key);
+      }
+      
       tbody.appendChild(tr);
     });
   }
 
   // -------------------- PDF helpers --------------------
   
-  // Eğer url bulunamazsa (örneğin Medium fontu repoya yüklenmediyse) fallbackUrl kullanması için ayarlandı.
   async function loadFontBase64(url, fallbackUrl = null){
     let res = await fetch(url);
     if (!res.ok) {
@@ -624,12 +638,12 @@
   async function ensureTurkishFont(doc){
     if (__fontsLoaded) return;
     
-    // Artık doğrudan reponuzdaki /fonts klasöründen çekiyor. Çok daha hızlı ve güvenli.
+    // Doğrudan reponuzdaki /fonts klasöründen çekiyor.
     const urlRegular = "/fonts/Roboto-Regular.ttf";
     const urlMedium = "/fonts/Roboto-Medium.ttf"; 
     
     try {
-      // urlMedium bulunamazsa otomatik olarak urlRegular'ı fallback olarak kullanacak, böylece PDF patlamayacak.
+      // urlMedium bulunamazsa otomatik olarak urlRegular'ı fallback olarak kullanacak.
       const[base64Regular, base64Medium] = await Promise.all([
         loadFontBase64(urlRegular),
         loadFontBase64(urlMedium, urlRegular)
