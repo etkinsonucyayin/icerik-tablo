@@ -339,7 +339,7 @@
 <script>
   // -------------------- State --------------------
   let data = [];
-  let filtered = [];
+  let filtered =[];
   let busyKey = "";
 
   const statusEl = document.getElementById("status");
@@ -356,7 +356,7 @@
   function saveScenarioToHistory(payload){
     const max = 10;
     const item = { ...payload, savedAt: new Date().toISOString() };
-    let arr = [];
+    let arr =[];
     try { arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch {}
     arr.unshift(item);
     arr = arr.slice(0, max);
@@ -391,7 +391,7 @@
   function showLoading(){
     const overlay = document.getElementById("loadingOverlay");
     const textEl = document.getElementById("loadingText");
-    const messages = [
+    const messages =[
       "Kazanım analiz ediliyor...",
       "İçerik türü belirleniyor...",
       "Senaryo tasarlanıyor...",
@@ -433,7 +433,7 @@
 
   function parseCSV(text, delimiter) {
     const rows = [];
-    let row = [];
+    let row =[];
     let cur = "";
     let inQuotes = false;
 
@@ -451,14 +451,14 @@
       if (!inQuotes && (c === "\n" || c === "\r")) {
         if (c === "\r" && next === "\n") i++;
         row.push(cur); rows.push(row);
-        row = []; cur = "";
+        row =[]; cur = "";
         continue;
       }
       cur += c;
     }
     if (cur.length > 0 || row.length > 0) { row.push(cur); rows.push(row); }
 
-    const headers = (rows[0] || []).map(h => (h ?? "").trim());
+    const headers = (rows[0] ||[]).map(h => (h ?? "").trim());
     return rows.slice(1).map(cols => {
       const obj = {};
       headers.forEach((h, idx) => (obj[h] = (cols[idx] ?? "").trim()));
@@ -483,7 +483,7 @@
       qInput.value = "";
       tbody.innerHTML = "";
       countEl.textContent = "0 kayıt";
-      filtered = [];
+      filtered =[];
       pdfBtn.disabled = true;
 
       if (!g) {
@@ -491,7 +491,7 @@
         return;
       }
 
-      const courses = [...new Set(
+      const courses =[...new Set(
         data.filter(d => String(d["SINIF"]).trim() === g)
             .map(d => (d["DERS ADI"] || "").trim())
             .filter(Boolean)
@@ -517,7 +517,7 @@
     const q = (qInput.value || "").trim().toLowerCase();
 
     if (!grade || !course) {
-      filtered = [];
+      filtered =[];
       tbody.innerHTML = "";
       countEl.textContent = "0 kayıt";
       pdfBtn.disabled = true;
@@ -574,13 +574,34 @@
     return btoa(binary);
   }
 
-  let __fontLoaded = false;
+  let __fontsLoaded = false;
   async function ensureTurkishFont(doc){
-    if (__fontLoaded) return;
-    const base64 = await loadFontBase64("/fonts/NotoSans-Regular.ttf");
-    doc.addFileToVFS("NotoSans-Regular.ttf", base64);
-    doc.addFont("NotoSans-Regular.ttf", "NotoSans", "normal");
-    __fontLoaded = true;
+    if (__fontsLoaded) return;
+    
+    // Güvenilir bir genel ağ bağlantısından (CDN) Türkçe destekli Roboto fontlarını alıyoruz.
+    const urlRegular = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf";
+    const urlMedium = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf";
+    
+    try {
+      const[base64Regular, base64Medium] = await Promise.all([
+        loadFontBase64(urlRegular),
+        loadFontBase64(urlMedium)
+      ]);
+      
+      // Normal font (Tablo içeriği için)
+      doc.addFileToVFS("Roboto-Regular.ttf", base64Regular);
+      doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+      
+      // Kalın font (Tablo başlıkları ve vurgular için)
+      doc.addFileToVFS("Roboto-Medium.ttf", base64Medium);
+      doc.addFont("Roboto-Medium.ttf", "Roboto", "bold");
+      
+      __fontsLoaded = true;
+    } catch (e) {
+      console.error("Font yükleme hatası:", e);
+      alert("PDF fontları yüklenirken bir hata oluştu. İnternet bağlantınızı kontrol ediniz.");
+      throw e;
+    }
   }
 
   function courseBaseName(courseStr){
@@ -604,84 +625,101 @@
     if (!grade || !course) { alert("Önce sınıf ve ders seçiniz."); return; }
     if (!filtered.length) { alert("PDF için veri bulunamadı."); return; }
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+    const originalText = pdfBtn.innerText;
+    pdfBtn.innerText = "Hazırlanıyor...";
+    pdfBtn.disabled = true;
 
-    await ensureTurkishFont(doc);
-    doc.setFont("NotoSans","normal");
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
 
-    const baseCourse = courseBaseName(course);
-    const headerTitle = "MEB E-İçerik Planlama Tablosu";
-    const headerSub = `${baseCourse} – ${grade}. Sınıf   Toplam Kazanım: ${filtered.length}`;
-    const footerText = "Oluşturulma tarihi: 2026";
-    const fileName = sanitizeFileName(`${baseCourse} ${grade} E-İçerik Tablosu`) + ".pdf";
+      await ensureTurkishFont(doc);
+      doc.setFont("Roboto","normal");
 
-    const head = [[ "SIRA", "ÜNİTE", "KAZANIM", "İÇERİK", "AÇIKLAMA" ]]; // AI yok
+      const baseCourse = courseBaseName(course);
+      const headerTitle = "MEB E-İçerik Planlama Tablosu";
+      const headerSub = `${baseCourse} – ${grade}. Sınıf   Toplam Kazanım: ${filtered.length}`;
+      const footerText = "Oluşturulma tarihi: " + new Date().toLocaleDateString("tr-TR");
+      const fileName = sanitizeFileName(`${baseCourse} ${grade} E-İçerik Tablosu`) + ".pdf";
 
-    const body = filtered.map(d => ([
-      d["SIRA NO"] || "",
-      d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "",
-      d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "",
-      d["E-İÇERİK TÜRÜ"] || "",
-      d["AÇIKLAMA"] || ""
-    ]));
+      const head = [[ "SIRA", "ÜNİTE", "KAZANIM", "İÇERİK", "AÇIKLAMA" ]]; // AI yok
 
-    doc.autoTable({
-      head,
-      body,
-      startY: 32,
-      theme: "grid",
-      styles: {
-        font: "NotoSans",
-        fontSize: 10,
-        cellPadding: 3,
-        overflow: "linebreak",
-        valign: "top"
-      },
-      headStyles: {
-        fillColor: [10,30,60],
-        textColor: [255,255,255],
-        fontStyle: "bold",
-        halign: "center"
-      },
-      alternateRowStyles: {
-        fillColor: [245,247,250] // zebra
-      },
-      columnStyles: {
-        0: { cellWidth: 12, halign:"center" }, // SIRA
-        1: { cellWidth: 34 },                  // ÜNİTE
-        2: { cellWidth: 65 },                  // KAZANIM
-        3: { cellWidth: 30, halign:"center" }, // İÇERİK
-        4: { cellWidth: 136 }                  // AÇIKLAMA
-      },
-      margin: { left:10, right:10, top:10, bottom:14 },
-      didDrawPage: function () {
-        const pageNo = doc.internal.getCurrentPageInfo().pageNumber;
-        const pageCount = doc.internal.getNumberOfPages();
+      const body = filtered.map(d => ([
+        d["SIRA NO"] || "",
+        d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "",
+        d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "",
+        d["E-İÇERİK TÜRÜ"] || "",
+        d["AÇIKLAMA"] || ""
+      ]));
 
-        // ÜST BAŞLIK sadece 1. sayfa
-        if (pageNo === 1) {
-          doc.setFont("NotoSans","normal");
+      const totalPagesExp = "{total_pages_count_string}";
 
-          doc.setFontSize(16);
-          doc.text(headerTitle, (297 - doc.getTextWidth(headerTitle))/2, 14);
+      doc.autoTable({
+        head,
+        body,
+        startY: 32,
+        theme: "grid",
+        styles: {
+          font: "Roboto",
+          fontSize: 10,
+          cellPadding: 3,
+          overflow: "linebreak",
+          valign: "top"
+        },
+        headStyles: {
+          fillColor: [10,30,60],
+          textColor:[255,255,255],
+          fontStyle: "bold",
+          halign: "center"
+        },
+        alternateRowStyles: {
+          fillColor:[245,247,250] // zebra
+        },
+        columnStyles: {
+          0: { cellWidth: 12, halign:"center" }, // SIRA
+          1: { cellWidth: 34 },                  // ÜNİTE
+          2: { cellWidth: 65 },                  // KAZANIM
+          3: { cellWidth: 30, halign:"center" }, // İÇERİK
+          4: { cellWidth: 136 }                  // AÇIKLAMA
+        },
+        margin: { left:10, right:10, top:10, bottom:14 },
+        didDrawPage: function () {
+          const pageNo = doc.internal.getCurrentPageInfo().pageNumber;
 
-          doc.setFontSize(12);
-          doc.text(headerSub, (297 - doc.getTextWidth(headerSub))/2, 22);
+          // ÜST BAŞLIK sadece 1. sayfa
+          if (pageNo === 1) {
+            doc.setFont("Roboto", "bold");
+            doc.setFontSize(16);
+            doc.text(headerTitle, (297 - doc.getTextWidth(headerTitle))/2, 14);
+
+            doc.setFont("Roboto", "normal");
+            doc.setFontSize(12);
+            doc.text(headerSub, (297 - doc.getTextWidth(headerSub))/2, 22);
+          }
+
+          // ALT BİLGİ her sayfa
+          doc.setFontSize(9);
+          doc.setTextColor(100);
+          doc.text(footerText, 10, 203);
+
+          const pageText = `Sayfa ${pageNo} / ${totalPagesExp}`;
+          doc.text(pageText, 287 - doc.getTextWidth(pageText), 203);
+          doc.setTextColor(0);
         }
+      });
 
-        // ALT BİLGİ her sayfa
-        doc.setFontSize(9);
-        doc.setTextColor(100);
-        doc.text(footerText, 10, 203);
-
-        const pageText = `Sayfa ${pageNo} / ${pageCount}`;
-        doc.text(pageText, 287 - doc.getTextWidth(pageText), 203);
-        doc.setTextColor(0);
+      // Toplam sayfa sayısını otomatik güncelleme
+      if (typeof doc.putTotalPages === 'function') {
+        doc.putTotalPages(totalPagesExp);
       }
-    });
 
-    doc.save(fileName);
+      doc.save(fileName);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      pdfBtn.innerText = originalText;
+      pdfBtn.disabled = false;
+    }
   }
 
   // -------------------- Modals --------------------
@@ -797,7 +835,7 @@
       const hasInteractive = /etkileşim|interaktif|oyun/i.test(desc) || /etkileşim|interaktif|oyun/i.test(contentType);
       const hasSimulation = /simülasyon|simulasyon/i.test(desc) || /simülasyon|simulasyon/i.test(contentType);
 
-      let choices = [];
+      let choices =[];
       if (parts.length > 1) {
         choices = parts.slice(0, 8).map((p, i) => {
           const lp = p.toLowerCase();
@@ -808,12 +846,12 @@
           return ({ title: t, text: p });
         });
       } else if (hasVideo && (hasInteractive || hasSimulation)) {
-        choices = [
+        choices =[
           { title: "Video / Belgesel", text: "Video/Belgesel formatında üret." },
           { title: hasSimulation ? "Simülasyon" : "Etkileşimli / Oyun", text: hasSimulation ? "Simülasyon formatında üret." : "Etkileşimli/Oyun formatında üret." }
         ];
       } else if (!hasVideo && !hasInteractive && !hasSimulation) {
-        choices = [
+        choices =[
           { title: "Video", text: "Video formatında üret." },
           { title: "Etkileşimli / Oyun", text: "Etkileşimli/Oyun formatında üret." },
           { title: "Simülasyon", text: "Simülasyon formatında üret." }
