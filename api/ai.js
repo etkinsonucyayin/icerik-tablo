@@ -1,34 +1,18 @@
 const OpenAI = require("openai").default;
 
-/**
- * İçerik türü sınıflandırma (CSV'deki "E-İÇERİK TÜRÜ" alanına göre)
- */
 function pickContentMode(contentType = "") {
   const t = String(contentType).toLowerCase();
-
   if (t.includes("simülasyon") || t.includes("simulasyon")) return "simulation";
-  if (t.includes("etkileşim") || t.includes("interaktif") || t.includes("oyun"))
-    return "interactive";
-  if (t.includes("video") || t.includes("belgesel") || t.includes("film"))
-    return "video";
+  if (t.includes("etkileşim") || t.includes("interaktif") || t.includes("oyun")) return "interactive";
+  if (t.includes("video") || t.includes("belgesel") || t.includes("film")) return "video";
   if (t.includes("ses")) return "audio";
-
   return "general";
 }
 
-/**
- * Kazanım kodunu (varsa) yakalamak için basit analiz:
- * Örn: "HB.3.1.1." / "FEN.8.2.3" / "T.7.3.2" vb.
- * Not: MEB'de kod standartları değişken olabilir; bu yüzden "best-effort".
- */
 function analyzeOutcomeCode(outcomeText = "") {
   const text = String(outcomeText || "").trim();
-
-  // En yaygın biçim: HARF(.HARF)* . SINIF . BÖLÜM . KAZANIM
-  // Örn HB.3.1.1  |  F.8.2.3  |  T.7.3.2  |  MAT.10.1.2
   const m = text.match(/\b([A-ZÇĞİÖŞÜ]{1,6})\s*\.?\s*(\d{1,2})\s*\.\s*(\d{1,2})\s*\.\s*(\d{1,3})\b/u);
   if (!m) return null;
-
   return {
     raw: m[0],
     prefix: m[1],
@@ -38,97 +22,38 @@ function analyzeOutcomeCode(outcomeText = "") {
   };
 }
 
-/**
- * Storyline çıktı şablonu
- * - YAZARIN GÖREVİ sadece metin/soru içeren slaytlarda
- * - Yapımcı (Storyline ekibi) için teknik uygulanabilirlik yüksek
- */
 function storylineTemplate(mode) {
   const common = `
-ZORUNLU FORMAT (Articulate Storyline 360 / SCORM / EBA)
+--- DİJİTAL ÜRETİM PLANI (Articulate Storyline 360 / SCORM 1.2) ---
 
-Storyboard yapısı:
-Scene → Slide listesi
+EKRAN (SLIDE) BAZLI AKIŞ:
+Her ekran (slide) için aşağıdaki yapı standarttır.
 
-HER SLIDE için mutlaka yaz:
-• Slide adı
-• Amaç
-• Görsel / asset listesi (varsa telif/üretim notu)
-• Etkileşim türü (varsa)
-• Storyline uygulama notu (trigger / layer / state / variable)
-• Erişilebilirlik notu (alt metin, klavye kullanımı, renk kontrastı vb.)
+SLIDE [No]:[Slide Adı/Amacı]
+1. PEDAGOJİK HEDEF: (Bu ekranda öğrenci ne öğrenecek/ne yapacak?)
+2. GÖRSEL/İŞİTSEL TASARIM (YAPIMCI): (Ekranda ne görünecek? Hangi materyaller kullanılacak? Animasyon ne olacak?)
+3. ETKİLEŞİM MEKANİĞİ (YAPIMCI): (Öğrenci nereye tıklayacak? Hangi Trigger/Layer'lar çalışacak?)
+4. ERİŞİLEBİLİRLİK (YAPIMCI): (Sesli betimleme, disleksi uyumlu font, renk kontrastı notları)
 
-EK KURAL (ÇİFT KANAL):
-- YAZARIN GÖREVİ sadece şu durumlarda eklenir:
-  (a) ekranda okunacak metin varsa, (b) soru/ölçme varsa, (c) doğru-yanlış geri bildirim metni varsa,
-  (d) seslendirme metni gerekiyorsa.
-- Metin/soru yoksa YAZARIN GÖREVİ yazma (sadece yapımcı notları yeterli).
-
-YAZARIN GÖREVİ (sadece metin/soru içeren slaytlarda):
-• [YAZAR DOLDURACAK] Ekran metni (sınıf seviyesine uygun)
-• [YAZAR DOLDURACAK] 1-2 gerçek yaşam örneği (kısa)
-• [YAZAR DOLDURACAK] Kavram/terim açıklamaları (gerekirse)
-• [YAZAR DOLDURACAK] Soru kökü + seçenekler (varsa)
-• [YAZAR DOLDURACAK] Doğru geri bildirim metni (varsa)
-• [YAZAR DOLDURACAK] Yanlış geri bildirim metni (varsa)
-
-YAPIMCININ GÖREVİ (her slaytta):
-• Trigger / Layer / State / Variable planı
-• Medya yerleşimi + optimizasyon
-• SCORM completion önerisi (SCORM 1.2; completion ölçütü)
-• EBA için yayınlama/performans notu
+✍️ YAZARIN DOLDURACAĞI ALANLAR (Bu ekran için):
+[ ] EKRAN METNİ: (Lütfen buraya öğrencinin okuyacağı/duyacağı metni yaş seviyesine uygun, sade ve TYMM'ye uygun şekilde yazınız.)
+[ ] SORU KÖKÜ VE SEÇENEKLER (Varsa): (Çeldiricisi güçlü, hatasız bir soru yazınız.)
+[ ] DOĞRU CEVAP DÖNÜTÜ: (Sadece "Tebrikler" değil, cevabın neden doğru olduğunu açıklayan 1-2 cümle yazınız.)
+[ ] YANLIŞ CEVAP DÖNÜTÜ: (Sadece "Yanlış" değil, öğrenciyi doğruya yönlendirecek ipucu/açıklama yazınız.)
 `;
 
   if (mode === "video") {
-    return `
-İÇERİK TÜRÜ: VIDEO / BELGESEL
-
-Beklenen çıktı:
-• Video storyboard (sahneler, kamera/görsel plan, seslendirme)
-• Storyline içine yerleştirme planı (giriş ekranı + oynatıcı + kontrol)
-• Video sonu ölçme / kısa pekiştirme
-
-` + common;
+    return `[İÇERİK TÜRÜ: VIDEO / BELGESEL TASARIMI]\n\n• Video Sahneleri (Kamera açıları, akış)\n• Dış Ses (Voiceover) Yönergeleri\n• Etkileşimli Video (Belirli saniyelerde durup soru sorma mantığı)\n` + common;
   }
-
   if (mode === "interactive") {
-    return `
-İÇERİK TÜRÜ: ETKİLEŞİMLİ İÇERİK
-
-Beklenen çıktı:
-• Öğrenci akışı (başla → etkileşim → geri bildirim → pekiştirme → ölçme)
-• Etkileşim kuralları (doğru/yanlış, ipucu, tekrar, puan)
-• Buton/hotspot tasarımı
-• Puan/ilerleme mantığı (progress, score vb.)
-
-` + common;
+    return `[İÇERİK TÜRÜ: ETKİLEŞİMLİ İÇERİK TASARIMI]\n\n• Etkileşim Türü (Sürükle-bırak, tıklamalı keşif, eşleştirme vb.)\n• Puanlama ve Tamamlama (SCORM Completion) kuralları\n` + common;
   }
-
   if (mode === "simulation") {
-    return `
-İÇERİK TÜRÜ: SİMÜLASYON
-
-Beklenen çıktı:
-• Simülasyon amacı ve sınırları
-• Parametreler (kullanıcı girdileri) ve değişkenler
-• Aşamalar (adım adım)
-• Sonuç ekranı ve geri bildirim
-
-` + common;
+    return `[İÇERİK TÜRÜ: SİMÜLASYON TASARIMI]\n\n• Simülasyonun Değişkenleri (Öğrenci neyi değiştirecek, sonuç nasıl etkilenecek?)\n• Güvenlik/Deney Adımları\n` + common;
   }
-
   if (mode === "audio") {
-    return `
-İÇERİK TÜRÜ: SES / ANLATIM
-
-Beklenen çıktı:
-• Sesli anlatım akışı (bölümler)
-• (Varsa) ekranda eşlik eden metin/infografik planı
-• Ses efektleri / vurgu notları
-
-` + common;
+    return `[İÇERİK TÜRÜ: SESLİ İÇERİK TASARIMI]\n\n• Seslendirme vurgu/tonlama notları\n• Arka plan efektleri (SFX) planı\n` + common;
   }
-
   return common;
 }
 
@@ -139,14 +64,10 @@ module.exports = async function handler(req, res) {
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({
-        title: "AI Hatası",
-        error: "OPENAI_API_KEY bulunamadı",
-      });
+      return res.status(500).json({ title: "AI Hatası", error: "OPENAI_API_KEY bulunamadı" });
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
     const row = req.body || {};
 
     const grade = String(row["SINIF"] ?? "").trim();
@@ -154,110 +75,65 @@ module.exports = async function handler(req, res) {
     const unit = String(row["ÜNİTE/TEMA/ ÖĞRENME ALANI"] ?? "").trim();
     const outcome = String(row["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] ?? "").trim();
     const contentType = String(row["E-İÇERİK TÜRÜ"] ?? "").trim();
-    const sıra = String(row["SIRA NO"] ?? "").trim();
-
+    
     let desc = String(row["AÇIKLAMA"] ?? "").trim();
     if (row.forceChoiceText) desc = String(row.forceChoiceText).trim();
 
     const mode = row.forceMode ? String(row.forceMode) : pickContentMode(contentType);
     const template = storylineTemplate(mode);
-
     const codeInfo = analyzeOutcomeCode(outcome);
 
+    // AI'ın Rolü, Kesin Sınırları ve Kuralları (System Prompt)
+    const systemInstruction = `
+Sen, Milli Eğitim Bakanlığı (MEB) Talim Terbiye Kurulu Başkanlığı (TTKB) "E-İçerik İnceleme Kriterleri" (Kılavuz sayfa 707-749 arası) ile "Türkiye Yüzyılı Maarif Modeli (TYMM)" felsefesine tam hâkim Baş Öğretim Tasarımcısı (Senior ID) ve E-İçerik Denetmenisin.
+
+GÖREVİN:
+Yazarların (alan uzmanlarının) içerik metinlerini hazırlaması için bir taslak oluşturmak ve aynı zamanda bu içeriği geliştirecek bilişimcilere (Storyline vb. araçları kullanan yapımcılara) net, teknik bir iş emri vermektir.
+
+MUTLAK UYULMASI GEREKEN TTKB & MEB KURALLARI (KIRMIZI ÇİZGİLER):
+1. MÜFREDATA SADAKAT: Verilen açıklama ve kazanımın sınırları aşılamaz. Asla farklı bir konu anlatımına girilmez. Yaş grubuna bilişsel olarak ağır gelecek akademik terimler veya çok basit kalacak çocuksu ifadeler (örn. lise öğrencisine çizgi film dili) kullanılamaz.
+2. DÖNÜT/DÜZELTME STANDARDI: Etkileşimlerde "Tebrikler" veya "Yanlış" gibi basit kelimeler yeterli DEĞİLDİR. Neden doğru/yanlış olduğunu açıklayan yapılandırıcı geri bildirim metni boşlukları tasarlanmalıdır.
+3. KULLANICI DENEYİMİ (UX/UI): Ekrana yığınla metin konulmaz, "chunking" (parçalama) yapılır. Öğrenci sadece "İleri" butonuna basan pasif izleyici olamaz, anlamlı bir etkileşime sokulmalıdır.
+4. ERİŞİLEBİLİRLİK: SCORM 1.2 tamamlama şartları ve EBA'ya uyumlu hafif dosya boyutu (medya optimizasyonu) prensipleri geliştiriciye hatırlatılmalıdır.
+`;
+
     const userPrompt = `
-ROLÜN
-Sen MEB için çalışan kıdemli bir e-öğrenme tasarımcısı ve eğitim teknolojileri uzmanısın.
-Çıktın hem e-içerik yapımcısının (Storyline/SCORM) uygulayacağı kadar teknik, hem de yazarın/öğretmenin
-nerede neyi düzenleyeceğini anlayacağı kadar yönlendirici olmalı.
+LÜTFEN AŞAĞIDAKİ GİRDİLERE GÖRE TTKB STANDARTLARINDA BİR SENARYO İŞ EMRİ OLUŞTUR:
 
-KAYNAK ÇERÇEVESİ (TYMM + öğretim programı yaklaşımı)
-- Türkiye Yüzyılı Maarif Modeli (TYMM) öğretim programlarının genel yaklaşımıyla uyumlu kal:
-  • kazanım odaklılık, yaş düzeyi, aşamalılık
-  • değerler/becerilerle uyum
-  • hedef dışına taşmama, konu kapsamını gereksiz genişletmeme
-- Öğretim programı sınırlarını belirlerken "açıklama + kazanım + sınıf seviyesi" dışına çıkma.
-- Emin olmadığın detaylarda muhafazakâr ol: sadece verilen metne sadık kal.
-
-E-İÇERİK KRİTERLERİ (özet)
-• pedagojik uygunluk • hedef ile uyum • etkileşim • geri bildirim
-• ölçme değerlendirme • erişilebilirlik • teknik kalite
-
-ASLA
-• açıklamada olmayan yeni etkinlik/amaç uydurma
-• içerik türünü değiştirme
-• kazanım dışı konu ekleme
-
-GİRDİLER
-- Sınıf: ${grade}
+GİRDİLER:
+- Sınıf Seviyesi: ${grade}
 - Ders: ${course}
-- Ünite/Tema/Alan: ${unit}
-- Kazanım: ${outcome}
-- İçerik Türü (sütun): ${contentType}
-- Sıra No: ${sıra}
-- Seçilen Açıklama: ${desc}
+- Ünite/Öğrenme Alanı: ${unit}
+- Kazanım / Çıktı: ${outcome}
+- E-İçerik Türü: ${contentType}
+- İçerik Kısıtı / Açıklama: ${desc}
+${codeInfo ? `- Kazanım Kodu: ${codeInfo.raw}` : ""}
 
-KAZANIM KODU ANALİZİ (best-effort)
-${codeInfo ? `- Yakalanan kod: ${codeInfo.raw}
-- Kısaltma/prefix: ${codeInfo.prefix}
-- Koddan sınıf: ${codeInfo.gradeFromCode}
-- Alan/ünite ipucu: ${codeInfo.strandOrUnit}
-- Kazanım sıra: ${codeInfo.outcomeIndex}
-` : `- Kazanım kodu net yakalanamadı. Yine de metindeki kazanım ifadesini esas al.`}
+AŞAĞIDAKİ BAŞLIK VE YAPIYI BİREBİR KULLANARAK ÇIKTI VER:
 
-İSTENEN ÇIKTI (SIRAYLA, BAŞLIKLARLA)
+### 1. KAZANIMIN SINIRLARI VE YAZARA UYARILAR
+- BU İÇERİKTE NELERDEN KESİNLİKLE BAHSEDİLMEMELİ: (Müfredat dışına çıkmamak için kırmızı çizgileri belirt)
+- DİL VE YAŞ SEVİYESİ UYARISI: (Bu sınıf düzeyindeki öğrencinin pedagojik durumu)
+- VURGULANACAK DEĞER/BECERİ (TYMM): (Kazanımla uyumlu 21. yy becerisi veya kök değer)
 
-1) SEÇİLEN SENARYO TALEBİ (1-2 satır)
-Açıklamadaki hangi ifadeyi esas aldığını yaz.
+### 2. TTKB PEDAGOJİK TASARIM VE ERİŞİLEBİLİRLİK PLANI
+- UI/UX ve Erişilebilirlik Yönergeleri: (Renk kontrastı, font, sesli betimleme)
+- Geri Bildirim Yaklaşımı: (Dönütlerin nasıl kurgulanacağı)
 
-2) TYMM / ÖĞRETİM PROGRAMI SINIRLILIKLARI (madde madde)
-- Bu kazanım ve sınıf düzeyinde içerikte NELER yapılmamalı?
-- Konu kapsamı nerede bitmeli?
-- Dil/örnek düzeyi (yaşa uygunluk) sınırı.
-- (Varsa) değer/beceri vurgusu: kazanımı destekleyecek kadar, aşırı genellemeden.
+### 3. EKRAN EKRAN STORYBOARD (SENARYO) TASLAĞI
+(Aşağıdaki formata göre sahneleri / ekranları planla. Lütfen yazarın metin yazacağı yerleri "✍️ YAZARIN DOLDURACAĞI ALANLAR" başlığıyla açıkça göster ki yazar nereyi dolduracağını bilsin.)
 
-3) PEDAGOJİK ANALİZ (kısa ve net)
-- Öğrenme hedefi (kazanıma göre)
-- Önkoşul bilgi/yanılgılar (2-3 madde)
-- Öğrenci düzeyi uyarlaması (bu sınıf için)
-
-4) İÇERİK TASARIM STRATEJİSİ
-- İçerik türü neden uygun? (video/etkileşim/simülasyon/ses)
-- Öğrenci akışı (başla→öğren→uygula→pekiştir→ölç)
-- Geri bildirim yaklaşımı
-
-5) STORYLINE SENARYOSU (Scene → Slide)
 ${template}
 
-Önemli: "YAZARIN GÖREVİ" sadece metin/soru içeren slaytlarda yer alacak.
-Yazarın dolduracağı yerleri mutlaka [YAZAR DOLDURACAK: ...] etiketiyle işaretle.
-
-6) ÖLÇME-DEĞERLENDİRME
-- En az 3 soru (içerik türüne uygun: video sonrası kısa ölçme / etkileşim içi kontrol vb.)
-- Doğru/yanlış geri bildirim metinleri (yazar bloğu olan slaytlarda)
-
-7) TESLİM KONTROL LİSTESİ (10-14 madde)
-- pedagojik uygunluk, erişilebilirlik, medya optimizasyonu, SCORM completion, EBA uyumu vb.
-
-8) AÇIKLAMAYA UYGUNLUK (3 madde)
-Açıklamadaki şartları nasıl karşıladığını madde madde yaz.
-
-9) ÜRETİM TAHMİNLERİ
-- Tahmini video süresi (varsa)
-- Tahmini öğrenci etkileşim süresi
-- Tahmini geliştirme süresi (Storyline üretimi + test + SCORM paket)
-
-Çıktı dili: Türkçe. Madde madde. Teknik ekip için uygulanabilir.
+### 4. BİLİŞİM/YAPIM EKİBİ İÇİN SCORM & EBA TEKNİK KONTROL LİSTESİ
+(Bu e-içeriğin EBA portalinde sorunsuz çalışması ve TTKB denetiminden geçmesi için yapımcının uyması gereken 5 kritik teknik zorunluluk)
 `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.35,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Sen MEB için e-içerik üretim senaryosu hazırlayan kıdemli instructional designer'sın. Açıklamaya ve kazanıma sadık kalır; hedef dışına taşmaz; uygulanabilir Storyline/SCORM yönergesi üretirsin.",
-        },
+      model: "gpt-4o", // Gpt-4o modeli kullanıldı (Kalite ve muhakeme için)
+      temperature: 0.2, // Sıcaklık düşürüldü (Tutarlılık ve ciddiyet için)
+      messages:[
+        { role: "system", content: systemInstruction },
         { role: "user", content: userPrompt },
       ],
     });
@@ -265,17 +141,9 @@ Açıklamadaki şartları nasıl karşıladığını madde madde yaz.
     const text = completion.choices?.[0]?.message?.content || "Boş yanıt";
 
     return res.status(200).json({
-      title: "E-İçerik Senaryo Dokümanı",
+      title: `${grade}. Sınıf ${course} - E-İçerik Üretim Senaryosu`,
       text,
-      meta: {
-        grade,
-        course,
-        unit,
-        outcome,
-        contentType,
-        mode,
-        outcomeCode: codeInfo?.raw || null,
-      },
+      meta: { grade, course, unit, outcome, contentType, mode, outcomeCode: codeInfo?.raw || null },
     });
   } catch (error) {
     return res.status(500).json({
