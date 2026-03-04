@@ -84,8 +84,13 @@
   input{ min-width:260px; }
   select:disabled, input:disabled{ opacity:.6; }
 
+  /* Dropdown okunurluk */
   select{ color:#eaf0ff !important; }
-  select option{ background:#0f1b32 !important; color:#ffffff !important; }
+  select option{
+    background:#0f1b32 !important;
+    color:#ffffff !important;
+  }
+  select option[value=""]{ color:#a9b6d6 !important; }
 
   .table-wrap{ width:100%; overflow:auto; }
   table{ width:100%; border-collapse:separate; border-spacing:0; min-width:980px; }
@@ -98,6 +103,8 @@
     padding:12px 12px;
     font-size:12px;
     color:var(--muted);
+    letter-spacing:.2px;
+    white-space:nowrap;
   }
   tbody td{
     padding:12px 12px;
@@ -108,6 +115,12 @@
   }
   tbody tr:nth-child(2n){ background:rgba(255,255,255,.02); }
   tbody tr:hover{ background:rgba(79,140,255,.10); }
+
+  .col-sira{ width:70px; color:var(--muted); }
+  .col-unit{ width:180px; }
+  .col-kaz{ width:320px; }
+  .col-icerik{ width:170px; }
+  .col-ai{ width:80px; text-align:right; }
 
   .ai-btn{
     border:1px solid rgba(79,140,255,.45);
@@ -120,7 +133,12 @@
     width:56px;
     box-shadow:0 8px 18px rgba(79,140,255,.22);
   }
+  .ai-btn:hover{ filter:brightness(1.04); }
+  .ai-btn:disabled{ opacity:.7; cursor:not-allowed; }
 
+  .hint{ font-size:12px; color:var(--muted); padding:10px 14px 0; }
+
+  /* Buttons */
   .btn{
     border:1px solid var(--line2);
     background:rgba(255,255,255,.06);
@@ -136,12 +154,9 @@
     background: linear-gradient(135deg, rgba(34,197,94,.95), rgba(34,197,94,.55));
     box-shadow:0 8px 18px rgba(34,197,94,.20);
   }
-  .btn-accent{
-    border-color: rgba(79,140,255,.45);
-    background: linear-gradient(135deg, rgba(79,140,255,.95), rgba(79,140,255,.55));
-    box-shadow:0 8px 18px rgba(79,140,255,.20);
-  }
+  .btn:disabled{ opacity:.6; cursor:not-allowed; }
 
+  /* Modal */
   .modal{
     position:fixed; inset:0;
     background:rgba(0,0,0,.55);
@@ -149,7 +164,7 @@
     align-items:center;
     justify-content:center;
     padding:18px;
-    z-index:1050;
+    z-index:50;
   }
   .panel{
     width:min(900px, 98vw);
@@ -160,11 +175,58 @@
     background: linear-gradient(180deg, rgba(15,27,50,.98), rgba(13,23,43,.98));
     box-shadow:var(--shadow);
   }
-  .panel-head{ padding:14px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+  .panel-head{
+    padding:14px 14px 10px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .panel-head h3{ margin:0; font-size:15px; }
   .panel-body{ padding:14px; }
-  pre{ margin:0; white-space:pre-wrap; line-height:1.45; font-size:13px; font-family:inherit; }
+  pre{ margin:0; white-space:pre-wrap; line-height:1.45; font-size:13px; }
+  .panel-actions{
+    padding:12px 14px 14px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+  }
 
-  /* Geri Bildirim Butonu - Hover Özellikli */
+  /* Loading Overlay */
+  #loadingOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(10,20,40,0.75);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+  }
+  .loading-box{
+    text-align:center;
+    padding:30px 40px;
+    background:linear-gradient(180deg,#0f1b32,#0c1628);
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .spinner{
+    width:48px;
+    height:48px;
+    border:4px solid rgba(255,255,255,.2);
+    border-top:4px solid #4f8cff;
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+    margin:0 auto 15px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #loadingText{ font-size:14px; color:#eaf0ff; }
+
+  /* Geri Bildirim Butonu (Hover ile Genişleyen Model) */
   .feedback-btn {
     position: fixed;
     bottom: 25px;
@@ -184,19 +246,30 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), padding 0.3s ease;
     white-space: nowrap;
   }
-  .f-text { opacity: 0; width: 0; transition: opacity 0.2s; }
-  .feedback-btn:hover { width: 190px; padding: 0 20px; justify-content: flex-start; }
-  .feedback-btn:hover .f-text { opacity: 1; width: auto; margin-left: 10px; }
-
-  #loadingOverlay{
-    position:fixed; inset:0; background:rgba(10,20,40,0.75); backdrop-filter:blur(6px);
-    display:none; align-items:center; justify-content:center; z-index:9999;
+  .feedback-btn .f-text {
+    opacity: 0;
+    width: 0;
+    transition: opacity 0.2s ease, margin 0.2s ease;
   }
-  .spinner{ width:48px; height:48px; border:4px solid rgba(255,255,255,.2); border-top:4px solid #4f8cff; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 15px; }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .feedback-btn:hover {
+    width: 190px;
+    padding: 0 20px;
+    justify-content: flex-start;
+  }
+  .feedback-btn:hover .f-text {
+    opacity: 1;
+    width: auto;
+    margin-left: 10px;
+  }
+
+  @media (max-width:720px){
+    input{ min-width:220px; }
+    select{ min-width:160px; }
+    .header{ align-items:flex-start; flex-direction:column; }
+  }
 </style>
 </head>
 
@@ -213,12 +286,28 @@
     <div class="card">
       <div class="controls">
         <div class="control-left">
-          <div class="group"><label for="grade">Sınıf</label><select id="grade"><option value="">Yükleniyor…</option></select></div>
-          <div class="group"><label for="course">Ders</label><select id="course" disabled><option value="">Önce sınıf seçiniz</option></select></div>
-          <div class="group"><label for="q">Ara</label><input id="q" type="search" placeholder="Ara…" disabled /></div>
+          <div class="group">
+            <label for="grade">Sınıf</label>
+            <select id="grade">
+              <option value="">Yükleniyor…</option>
+            </select>
+          </div>
+
+          <div class="group">
+            <label for="course">Ders</label>
+            <select id="course" disabled>
+              <option value="">Önce sınıf seçiniz</option>
+            </select>
+          </div>
+
+          <div class="group">
+            <label for="q">Ara</label>
+            <input id="q" type="search" placeholder="Kazanım / Açıklama içinde ara…" disabled />
+          </div>
         </div>
+
         <div class="control-right">
-          <button class="btn btn-accent" id="lastGenBtn" onclick="openLastScenario()">🕒 Son Senaryo</button>
+          <div class="badge" id="count">0 kayıt</div>
           <button class="btn btn-primary" id="pdfBtn" onclick="downloadPDF()" disabled>📄 PDF indir</button>
         </div>
       </div>
@@ -226,164 +315,807 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>SIRA</th><th>ÜNİTE</th><th>KAZANIM</th><th>İÇERİK</th><th>AÇIKLAMA</th><th style="text-align:right;">AI</th></tr>
+            <tr>
+              <th class="col-sira">SIRA</th>
+              <th class="col-unit">ÜNİTE</th>
+              <th class="col-kaz">KAZANIM</th>
+              <th class="col-icerik">İÇERİK</th>
+              <th>AÇIKLAMA</th>
+              <th class="col-ai">AI</th>
+            </tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
+
+      <div class="hint">İpucu: AI tıklanınca açıklamada birden fazla istek varsa önce “hangisi?” sorulur.</div>
+    </div>
+  </div>
+
+  <div id="loadingOverlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div id="loadingText">Senaryo oluşturuluyor...</div>
     </div>
   </div>
 
   <div class="modal" id="modal" onclick="backdropClose(event)">
-    <div class="panel">
+    <div class="panel" role="dialog" aria-modal="true">
       <div class="panel-head">
-        <h3 id="modalTitle">AI Sonucu</h3>
+        <h3 id="modalTitle">AI</h3>
         <button class="btn" onclick="closeModal()">Kapat</button>
       </div>
-      <div class="panel-body"><pre id="modalText"></pre></div>
-      <div class="panel-actions" style="padding:14px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;">
+      <div class="panel-body">
+        <pre id="modalText"></pre>
+      </div>
+      <div class="panel-actions">
         <button class="btn btn-primary" onclick="copyModal()">Kopyala</button>
         <button class="btn" onclick="downloadWord()">Word indir</button>
+        <button class="btn" onclick="openLastScenario()">Son Üretilen (Genel)</button>
         <button class="btn" onclick="clearScenarioHistory()">Geçmişi Sil</button>
         <button class="btn" onclick="closeModal()">Kapat</button>
       </div>
     </div>
   </div>
 
-  <div id="loadingOverlay"><div style="text-align:center;"><div class="spinner"></div><div id="loadingText" style="color:white;">Hazırlanıyor...</div></div></div>
-
-  <div class="modal" id="feedbackModal" onclick="feedbackBackdropClose(event)">
-    <div class="panel" style="width:700px; height:80vh;">
-      <div class="panel-head"><h3>Geri Bildirim</h3><button class="btn" onclick="closeFeedbackModal()">Kapat</button></div>
-      <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScCQcqpkJNvyYIBcVwXCZzpZ6zy__r2y5JyQt-LtvPgEOH8Og/viewform?embedded=true" width="100%" height="100%" frameborder="0">Yükleniyor…</iframe>
+  <div class="modal" id="choiceModal" onclick="choiceBackdropClose(event)">
+    <div class="panel" style="width:520px; max-width:96vw;">
+      <div class="panel-head">
+        <h3>Hangi senaryoyu istiyorsunuz?</h3>
+        <button class="btn" onclick="closeChoiceModal()">İptal</button>
+      </div>
+      <div class="panel-body" id="choiceBody" style="padding:14px; max-height:50vh; overflow:auto;"></div>
+      <div class="panel-actions" style="justify-content:center;">
+        <button class="btn" onclick="closeChoiceModal()">Kapat</button>
+      </div>
     </div>
   </div>
 
-  <button class="feedback-btn" onclick="openFeedbackModal()"><span>💬</span><span class="f-text">Görüş / Hata Bildir</span></button>
+  <div class="modal" id="existModal" onclick="existBackdropClose(event)">
+    <div class="panel" style="width:460px; max-width:96vw;">
+      <div class="panel-head">
+        <h3 style="color:#4f8cff;">Daha Önce Üretilmiş!</h3>
+        <button class="btn" onclick="closeExistModal()">İptal</button>
+      </div>
+      <div class="panel-body">
+        <p style="font-size:14px; color:var(--text); line-height:1.6; margin:0;">
+          Bu satır (kazanım) için daha önce bir senaryo üretmişsiniz.<br><br>
+          <span style="color:var(--muted);">Kayıtlı senaryoyu hemen görmek mi istersiniz, yoksa yeniden (belki farklı bir türde) üretmek mi istersiniz?</span>
+        </p>
+      </div>
+      <div class="panel-actions" style="justify-content:flex-end;">
+        <button class="btn" onclick="startNewScenario()">Yeniden Üret</button>
+        <button class="btn btn-primary" onclick="showOldScenario()">Kayıtlı Eskiyi Göster</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="feedbackModal" onclick="feedbackBackdropClose(event)">
+    <div class="panel" style="width:700px; max-height:85vh;">
+      <div class="panel-head">
+        <h3>Görüş / Hata Bildir</h3>
+        <button class="btn" onclick="closeFeedbackModal()">Kapat</button>
+      </div>
+      <div class="panel-body" style="padding:0; height:600px; overflow:hidden;">
+        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScCQcqpkJNvyYIBcVwXCZzpZ6zy__r2y5JyQt-LtvPgEOH8Og/viewform?embedded=true" 
+                width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">
+          Yükleniyor…
+        </iframe>
+      </div>
+    </div>
+  </div>
+
+  <button class="feedback-btn" onclick="openFeedbackModal()">
+    <span style="font-size: 20px;">💬</span>
+    <span class="f-text">Görüş / Hata Bildir</span>
+  </button>
 
 <script>
-  let data = []; let filtered = []; let busyKey = "";
+  // -------------------- State --------------------
+  let data =[];
+  let filtered =[];
+  let busyKey = "";
+
+  // Onay bekleyen satır bilgileri (Exist Modal için)
+  let pendingRow = null;
+  let pendingKey = "";
+  let foundScenario = null;
+
+  const statusEl = document.getElementById("status");
+  const countEl = document.getElementById("count");
+  const gradeSelect = document.getElementById("grade");
+  const courseSelect = document.getElementById("course");
+  const qInput = document.getElementById("q");
+  const tbody = document.getElementById("tbody");
+  const pdfBtn = document.getElementById("pdfBtn");
+
+  // -------------------- Scenario history --------------------
   const HISTORY_KEY = "icerik_tablo_scenario_history_v2";
 
-  // --- History & Modal Logic ---
-  function saveScenarioToHistory(payload) {
-    let arr = [];
+  function saveScenarioToHistory(payload){
+    const max = 50; 
+    const item = { ...payload, savedAt: new Date().toISOString() };
+    let arr =[];
     try { arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch {}
-    arr = arr.filter(x => x.key !== payload.key);
-    arr.unshift(payload);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, 50)));
+    
+    if (item.key) {
+      arr = arr.filter(x => x.key !== item.key);
+    }
+    
+    arr.unshift(item);
+    arr = arr.slice(0, max);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
   }
 
-  function openLastScenario() {
-    let arr = [];
-    try { arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch {}
-    const last = arr[0];
-    if (!last) { alert("Henüz bir senaryo üretilmemiş."); return; }
-    
-    window.__lastRowForWord = last.rowMeta || {};
-    document.getElementById("modalTitle").innerText = last.title;
-    document.getElementById("modalText").innerText = last.text;
+  function getScenarioByKey(key) {
+    try {
+      const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      return arr.find(x => x.key === key) || null;
+    } catch { return null; }
+  }
+
+  function getLastScenario(){
+    try {
+      const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      return arr[0] || null;
+    } catch { return null; }
+  }
+
+  function openLastScenario(){
+    const last = getLastScenario();
+    if (!last) { alert("Kayıtlı senaryo bulunamadı."); return; }
+    window.__lastRowForWord = last.rowMeta || null;
+    document.getElementById("modalTitle").innerText = last.title || "Son Senaryo";
+    document.getElementById("modalText").innerText = last.text || "";
     document.getElementById("modal").style.display = "flex";
   }
 
-  function closeModal() { document.getElementById("modal").style.display = "none"; }
-  function backdropClose(e) { if(e.target.id === "modal") closeModal(); }
-  function copyModal() { navigator.clipboard.writeText(document.getElementById("modalText").innerText); alert("Kopyalandı!"); }
-  
-  function clearScenarioHistory() { 
-    if(confirm("Tüm geçmiş silinsin mi?")) { 
-      localStorage.removeItem(HISTORY_KEY); 
-      closeModal(); 
-    } 
+  function clearScenarioHistory(){
+    if (!confirm("Kaydedilmiş senaryo geçmişi tamamen silinsin mi?")) return;
+    localStorage.removeItem(HISTORY_KEY);
+    alert("Geçmiş silindi.");
+    closeModal();
   }
 
-  function openFeedbackModal() { document.getElementById("feedbackModal").style.display = "flex"; }
-  function closeFeedbackModal() { document.getElementById("feedbackModal").style.display = "none"; }
-  function feedbackBackdropClose(e) { if(e.target.id === "feedbackModal") closeFeedbackModal(); }
+  // -------------------- Loading overlay --------------------
+  let loadingInterval = null;
 
-  // --- CSV & Table Logic ---
-  fetch("/content.csv").then(r => r.text()).then(text => {
-    data = parseCSV(text, ";").filter(d => d["SINIF"]);
-    document.getElementById("status").textContent = `Toplam: ${data.length} kayıt`;
-    initFilters();
-  });
+  function showLoading(){
+    const overlay = document.getElementById("loadingOverlay");
+    const textEl = document.getElementById("loadingText");
+    const messages =[
+      "Kazanım analiz ediliyor...",
+      "İçerik türü belirleniyor...",
+      "Senaryo tasarlanıyor...",
+      "Storyline akışı hazırlanıyor...",
+      "SCORM/EBA notları ekleniyor..."
+    ];
+    let i = 0;
+    textEl.innerText = messages[0];
+    if (loadingInterval) clearInterval(loadingInterval);
+    loadingInterval = setInterval(() => {
+      i = (i + 1) % messages.length;
+      textEl.innerText = messages[i];
+    }, 1200);
+    overlay.style.display = "flex";
+  }
+
+  function hideLoading(){
+    const overlay = document.getElementById("loadingOverlay");
+    overlay.style.display = "none";
+    if (loadingInterval) clearInterval(loadingInterval);
+  }
+
+  // -------------------- CSV load --------------------
+  fetch("/content.csv")
+    .then(r => {
+      if (!r.ok) throw new Error("content.csv yüklenemedi (HTTP " + r.status + ")");
+      return r.text();
+    })
+    .then(text => {
+      data = parseCSV(text, ";");
+      data = data.filter(d => d["SINIF"] && String(d["SINIF"]).trim().match(/^\d+$/));
+      statusEl.textContent = `Toplam: ${data.length} kayıt`;
+      initFilters();
+    })
+    .catch(err => {
+      statusEl.textContent = "CSV yüklenemedi. /content.csv kontrol edin.";
+      console.error("CSV load error:", err);
+    });
 
   function parseCSV(text, delimiter) {
-    const rows = text.split(/\r?\n/).map(r => r.split(delimiter));
-    const headers = rows[0].map(h => h.trim());
+    const rows =[];
+    let row =[];
+    let cur = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      const next = text[i + 1];
+
+      if (c === '"') {
+        if (inQuotes && next === '"') { cur += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+        continue;
+      }
+      if (!inQuotes && c === delimiter) { row.push(cur); cur = ""; continue; }
+
+      if (!inQuotes && (c === "\n" || c === "\r")) {
+        if (c === "\r" && next === "\n") i++;
+        row.push(cur); rows.push(row);
+        row =[]; cur = "";
+        continue;
+      }
+      cur += c;
+    }
+    if (cur.length > 0 || row.length > 0) { row.push(cur); rows.push(row); }
+
+    const headers = (rows[0] ||[]).map(h => (h ?? "").trim());
     return rows.slice(1).map(cols => {
-      let obj = {};
-      headers.forEach((h, i) => obj[h] = (cols[i] || "").trim());
+      const obj = {};
+      headers.forEach((h, idx) => (obj[h] = (cols[idx] ?? "").trim()));
       return obj;
     });
   }
 
+  // -------------------- Filters --------------------
   function initFilters() {
-    const grades = [...new Set(data.map(d => d["SINIF"]))].sort((a,b)=>a-b);
-    const gSel = document.getElementById("grade");
-    gSel.innerHTML = '<option value="">Seçiniz</option>' + grades.map(g => `<option value="${g}">${g}</option>`).join("");
-    
-    gSel.onchange = () => {
-      const cSel = document.getElementById("course");
-      cSel.disabled = !gSel.value;
-      const courses = [...new Set(data.filter(d => d["SINIF"] === gSel.value).map(d => d["DERS ADI"]))].sort();
-      cSel.innerHTML = '<option value="">Seçiniz</option>' + courses.map(c => `<option value="${c}">${c}</option>`).join("");
+    const grades =[...new Set(data.map(d => String(d["SINIF"]).trim()))]
+      .filter(Boolean)
+      .sort((a,b) => Number(a) - Number(b));
+
+    gradeSelect.innerHTML =
+      `<option value="">Seçiniz</option>` +
+      grades.map(g => `<option value="${g}">${g}</option>`).join("");
+
+    gradeSelect.onchange = () => {
+      const g = gradeSelect.value;
+      courseSelect.disabled = !g;
+      qInput.disabled = true;
+      qInput.value = "";
+      tbody.innerHTML = "";
+      countEl.textContent = "0 kayıt";
+      filtered =[];
+      pdfBtn.disabled = true;
+
+      if (!g) {
+        courseSelect.innerHTML = `<option value="">Önce sınıf seçiniz</option>`;
+        return;
+      }
+
+      const courses =[...new Set(
+        data.filter(d => String(d["SINIF"]).trim() === g)
+            .map(d => (d["DERS ADI"] || "").trim())
+            .filter(Boolean)
+      )].sort((a,b) => a.localeCompare(b, "tr"));
+
+      courseSelect.innerHTML =
+        `<option value="">Seçiniz</option>` +
+        courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
     };
 
-    document.getElementById("course").onchange = applyFilter;
-    document.getElementById("q").oninput = applyFilter;
+    courseSelect.onchange = () => {
+      qInput.value = "";
+      qInput.disabled = !(gradeSelect.value && courseSelect.value);
+      applyFilterAndRender();
+    };
+
+    qInput.oninput = applyFilterAndRender;
   }
 
-  function applyFilter() {
-    const g = document.getElementById("grade").value;
-    const c = document.getElementById("course").value;
-    const q = document.getElementById("q").value.toLowerCase();
-    document.getElementById("q").disabled = !c;
+  function applyFilterAndRender() {
+    const grade = gradeSelect.value;
+    const course = courseSelect.value;
+    const q = (qInput.value || "").trim().toLowerCase();
 
-    filtered = data.filter(d => d["SINIF"] === g && d["DERS ADI"] === c && (d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"].toLowerCase().includes(q) || d["AÇIKLAMA"].toLowerCase().includes(q)));
-    renderTable();
+    if (!grade || !course) {
+      filtered =[];
+      tbody.innerHTML = "";
+      countEl.textContent = "0 kayıt";
+      pdfBtn.disabled = true;
+      return;
+    }
+
+    filtered = data.filter(d =>
+      String(d["SINIF"]).trim() === grade &&
+      (d["DERS ADI"] || "").trim() === course
+    );
+
+    if (q) {
+      filtered = filtered.filter(d => {
+        const kaz = (d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "").toLowerCase();
+        const acik = (d["AÇIKLAMA"] || "").toLowerCase();
+        return kaz.includes(q) || acik.includes(q);
+      });
+    }
+
+    countEl.textContent = `${filtered.length} kayıt`;
+    renderTable(filtered);
+    pdfBtn.disabled = filtered.length === 0;
   }
 
-  function renderTable() {
-    const body = document.getElementById("tbody");
-    body.innerHTML = "";
-    filtered.forEach(d => {
+  function renderTable(rows) {
+    tbody.innerHTML = "";
+    rows.forEach(d => {
+      const key = `${d["SINIF"]}-${d["DERS ADI"]}-${d["SIRA NO"]}`;
       const tr = document.createElement("tr");
-      const key = `${d["SINIF"]}-${d["SIRA NO"]}`;
-      tr.innerHTML = `<td>${d["SIRA NO"]}</td><td>${d["ÜNİTE/TEMA/ ÖĞRENME ALANI"]}</td><td>${d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"]}</td><td>${d["E-İÇERİK TÜRÜ"]}</td><td>${d["AÇIKLAMA"]}</td><td style="text-align:right;"><button class="ai-btn" onclick="handleAI('${key}')">AI</button></td>`;
-      body.appendChild(tr);
+
+      // CSV'deki "AI Senaryosu" sütununda "yok" yazıp yazmadığını kontrol ediyoruz
+      const aiDurumu = String(d["AI Senaryosu"] || "").trim().toLowerCase();
+      const aiPasifMi = (aiDurumu === "yok");
+
+      // Eğer "yok" ise butonu tıklanamaz (disabled) ve soluk yapıyoruz
+      const aiCellHTML = aiPasifMi
+        ? `<button class="ai-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Bu içerik için AI senaryosu oluşturulamaz">Yok</button>`
+        : `<button class="ai-btn" data-key="${escapeHtml(key)}">AI</button>`;
+
+      tr.innerHTML = `
+        <td class="col-sira">${escapeHtml(d["SIRA NO"] || "")}</td>
+        <td class="col-unit">${escapeHtml(d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "")}</td>
+        <td class="col-kaz">${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
+        <td class="col-icerik">${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
+        <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
+        <td class="col-ai">${aiCellHTML}</td>
+      `;
+      
+      // Eğer pasif değilse, butona tıklama (AI üretme) özelliğini ekle
+      if (!aiPasifMi) {
+        tr.querySelector("button").onclick = () => handleAIClick(d, key);
+      }
+      
+      tbody.appendChild(tr);
     });
-    document.getElementById("pdfBtn").disabled = filtered.length === 0;
   }
 
-  async function handleAI(key) {
-    const row = filtered.find(d => `${d["SINIF"]}-${d["SIRA NO"]}` === key);
-    document.getElementById("loadingOverlay").style.display = "flex";
+  // -------------------- PDF helpers --------------------
+  
+  async function loadFontBase64(url, fallbackUrl = null){
+    let res = await fetch(url);
+    if (!res.ok) {
+      if (fallbackUrl) {
+          console.warn(`${url} bulunamadı, çökmemesi için alternatif olarak ${fallbackUrl} yükleniyor...`);
+          res = await fetch(fallbackUrl);
+      }
+      if (!res.ok) throw new Error("Font yüklenemedi: " + url + " (HTTP " + res.status + ")");
+    }
+    const buf = await res.arrayBuffer();
+    let binary = "";
+    const bytes = new Uint8Array(buf);
+    const chunk = 0x8000;
+    for (let i=0; i<bytes.length; i+=chunk){
+      binary += String.fromCharCode.apply(null, bytes.subarray(i,i+chunk));
+    }
+    return btoa(binary);
+  }
+
+  let __fontsLoaded = false;
+  async function ensureTurkishFont(doc){
+    if (__fontsLoaded) return;
+    
+    // Doğrudan reponuzdaki /fonts klasöründen çekiyor.
+    const urlRegular = "/fonts/Roboto-Regular.ttf";
+    const urlMedium = "/fonts/Roboto-Medium.ttf"; 
     
     try {
-      const res = await fetch("/api/ai", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(row) }).then(r => r.json());
-      saveScenarioToHistory({ key, title: res.title, text: res.text, rowMeta: row });
-      openLastScenario();
-    } catch(e) { alert("Hata oluştu."); }
-    document.getElementById("loadingOverlay").style.display = "none";
+      // urlMedium bulunamazsa otomatik olarak urlRegular'ı fallback olarak kullanacak.
+      const[base64Regular, base64Medium] = await Promise.all([
+        loadFontBase64(urlRegular),
+        loadFontBase64(urlMedium, urlRegular)
+      ]);
+      
+      doc.addFileToVFS("Roboto-Regular.ttf", base64Regular);
+      doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+      
+      doc.addFileToVFS("Roboto-Medium.ttf", base64Medium);
+      doc.addFont("Roboto-Medium.ttf", "Roboto", "bold");
+      
+      __fontsLoaded = true;
+    } catch (e) {
+      console.error("Font yükleme hatası:", e);
+      alert("PDF fontları yerel dizinden yüklenirken bir hata oluştu. Lütfen /fonts klasörünü kontrol ediniz.");
+      throw e;
+    }
   }
 
-  function downloadWord() {
+  function courseBaseName(courseStr){
+    const s = String(courseStr || "").trim();
+    return s.replace(/\s*\b\d+\b\s*$/,"").trim() || s;
+  }
+
+  function sanitizeFileName(name){
+    return String(name)
+      .replace(/[\\/:*?"<>|]+/g, "-")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120) || "E-İçerik Tablosu";
+  }
+
+  // -------------------- PDF (rapor kalitesi) --------------------
+  async function downloadPDF(){
+    const grade = gradeSelect.value;
+    const course = courseSelect.value;
+
+    if (!grade || !course) { alert("Önce sınıf ve ders seçiniz."); return; }
+    if (!filtered.length) { alert("PDF için veri bulunamadı."); return; }
+
+    const originalText = pdfBtn.innerText;
+    pdfBtn.innerText = "Hazırlanıyor...";
+    pdfBtn.disabled = true;
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+
+      await ensureTurkishFont(doc);
+      doc.setFont("Roboto","normal");
+
+      const baseCourse = courseBaseName(course);
+      const headerTitle = "MEB E-İçerik Planlama Tablosu";
+      const headerSub = `${baseCourse} – ${grade}. Sınıf   Toplam Kazanım: ${filtered.length}`;
+      const footerText = "Oluşturulma tarihi: " + new Date().toLocaleDateString("tr-TR");
+      const fileName = sanitizeFileName(`${baseCourse} ${grade} E-İçerik Tablosu`) + ".pdf";
+
+      const head = [[ "SIRA", "ÜNİTE", "KAZANIM", "İÇERİK", "AÇIKLAMA" ]];
+
+      const body = filtered.map(d => ([
+        d["SIRA NO"] || "",
+        d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "",
+        d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "",
+        d["E-İÇERİK TÜRÜ"] || "",
+        d["AÇIKLAMA"] || ""
+      ]));
+
+      const totalPagesExp = "{total_pages_count_string}";
+
+      doc.autoTable({
+        head,
+        body,
+        startY: 32,
+        theme: "grid",
+        styles: {
+          font: "Roboto",
+          fontSize: 10,
+          cellPadding: 3,
+          overflow: "linebreak",
+          valign: "top"
+        },
+        headStyles: {
+          fillColor:[10,30,60],
+          textColor:[255,255,255],
+          fontStyle: "bold",
+          halign: "center"
+        },
+        alternateRowStyles: {
+          fillColor:[245,247,250] // zebra
+        },
+        columnStyles: {
+          0: { cellWidth: 12, halign:"center" }, // SIRA
+          1: { cellWidth: 34 },                  // ÜNİTE
+          2: { cellWidth: 65 },                  // KAZANIM
+          3: { cellWidth: 30, halign:"center" }, // İÇERİK
+          4: { cellWidth: 136 }                  // AÇIKLAMA
+        },
+        margin: { left:10, right:10, top:10, bottom:14 },
+        didDrawPage: function () {
+          const pageNo = doc.internal.getCurrentPageInfo().pageNumber;
+
+          if (pageNo === 1) {
+            doc.setFont("Roboto", "bold");
+            doc.setFontSize(16);
+            doc.text(headerTitle, (297 - doc.getTextWidth(headerTitle))/2, 14);
+
+            doc.setFont("Roboto", "normal");
+            doc.setFontSize(12);
+            doc.text(headerSub, (297 - doc.getTextWidth(headerSub))/2, 22);
+          }
+
+          doc.setFontSize(9);
+          doc.setTextColor(100);
+          doc.text(footerText, 10, 203);
+
+          const pageText = `Sayfa ${pageNo} / ${totalPagesExp}`;
+          doc.text(pageText, 287 - doc.getTextWidth(pageText), 203);
+          doc.setTextColor(0);
+        }
+      });
+
+      if (typeof doc.putTotalPages === 'function') {
+        doc.putTotalPages(totalPagesExp);
+      }
+
+      doc.save(fileName);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      pdfBtn.innerText = originalText;
+      pdfBtn.disabled = false;
+    }
+  }
+
+  // -------------------- Modals --------------------
+  function backdropClose(e){ if (e.target && e.target.id === "modal") closeModal(); }
+  function closeModal(){ document.getElementById("modal").style.display = "none"; }
+
+  function copyModal(){
+    const text = document.getElementById("modalText").innerText || "";
+    navigator.clipboard.writeText(text);
+  }
+
+  function downloadWord(){
+    const title = (document.getElementById("modalTitle").innerText || "AI_Senaryosu").trim();
+    const text = (document.getElementById("modalText").innerText || "").trim();
     const row = window.__lastRowForWord || {};
-    const text = document.getElementById("modalText").innerText;
-    const html = `<html><body><h2>${document.getElementById("modalTitle").innerText}</h2><p><b>Kazanım:</b> ${row["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || ""}</p><hr/><pre>${text}</pre></body></html>`;
-    const blob = new Blob([html], {type:"application/msword"});
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "Senaryo.doc"; a.click();
+
+    const sinif = row["SINIF"] || "";
+    const ders = row["DERS ADI"] || "";
+    const unite = row["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "";
+    const kazanim = row["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "";
+
+    const safeTitle = sanitizeFileName(title);
+
+    const html =
+`<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
+<body style="font-family:Calibri,Arial,sans-serif; font-size:11pt;">
+<h2>${escapeHtml(title)}</h2>
+<p><strong>Sınıf:</strong> ${escapeHtml(sinif)}</p>
+<p><strong>Ders:</strong> ${escapeHtml(ders)}</p>
+<p><strong>Ünite:</strong> ${escapeHtml(unite)}</p>
+<p><strong>Kazanım:</strong> ${escapeHtml(kazanim)}</p>
+<hr>
+<p><strong>Senaryo Dokümanı:</strong></p>
+<pre style="white-space:pre-wrap; line-height:1.5;">${escapeHtml(text)}</pre>
+</body></html>`;
+
+    const blob = new Blob([html], { type: "application/msword" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${safeTitle}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1200);
   }
 
-  // --- PDF ---
-  function downloadPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('l', 'mm', 'a4');
-    doc.text("E-İçerik Planlama Tablosu", 14, 15);
-    doc.autoTable({ head: [["SIRA", "ÜNİTE", "KAZANIM", "İÇERİK", "AÇIKLAMA"]], body: filtered.map(d => [d["SIRA NO"], d["ÜNİTE/TEMA/ ÖĞRENME ALANI"], d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"], d["E-İÇERİK TÜRÜ"], d["AÇIKLAMA"]]), startY: 20 });
-    doc.save("Tablo.pdf");
+  // -------------------- Choice modal --------------------
+  let choiceResolveFn = null;
+
+  function choiceBackdropClose(e){
+    if (e.target && e.target.id === "choiceModal") closeChoiceModal();
   }
+
+  function closeChoiceModal(){ 
+    document.getElementById("choiceModal").style.display = "none"; 
+    // Kullanıcı vazgeçtiyse bekleyen Promise'i null ile çöz ki sistem donmasın
+    if (choiceResolveFn) {
+      choiceResolveFn(null);
+      choiceResolveFn = null;
+    }
+  }
+
+  function showChoiceModal(choices){
+    return new Promise(resolve => {
+      choiceResolveFn = resolve;
+      const modal = document.getElementById("choiceModal");
+      const body = document.getElementById("choiceBody");
+      body.innerHTML = "";
+
+      choices.forEach((c, idx) => {
+        const cont = document.createElement("div");
+        cont.style.border = "1px solid rgba(255,255,255,.08)";
+        cont.style.padding = "10px";
+        cont.style.marginBottom = "8px";
+        cont.style.borderRadius = "12px";
+        cont.style.background = "rgba(255,255,255,.03)";
+
+        const title = document.createElement("div");
+        title.style.fontWeight = "700";
+        title.style.marginBottom = "6px";
+        title.innerText = (c.title || `Seçenek ${idx+1}`);
+
+        const txt = document.createElement("div");
+        txt.style.fontSize = "13px";
+        txt.style.color = "var(--muted)";
+        txt.style.whiteSpace = "pre-wrap";
+        txt.innerText = c.text;
+
+        const btn = document.createElement("button");
+        btn.className = "btn btn-primary";
+        btn.style.marginTop = "8px";
+        btn.innerText = "Bu seçeneği üret";
+        btn.onclick = () => { 
+          modal.style.display = "none"; 
+          if (choiceResolveFn) {
+            choiceResolveFn(idx);
+            choiceResolveFn = null;
+          }
+        };
+
+        cont.appendChild(title);
+        cont.appendChild(txt);
+        cont.appendChild(btn);
+        body.appendChild(cont);
+      });
+
+      modal.style.display = "flex";
+    });
+  }
+
+  // -------------------- Existing Scenario Modal --------------------
+  function existBackdropClose(e) {
+    if (e.target && e.target.id === "existModal") closeExistModal();
+  }
+  function closeExistModal() {
+    document.getElementById("existModal").style.display = "none";
+  }
+
+  // Kullanıcı "Kayıtlı Eskiyi Göster" derse:
+  function showOldScenario() {
+    closeExistModal();
+    window.__lastRowForWord = foundScenario.rowMeta || null;
+    document.getElementById("modalTitle").innerText = foundScenario.title || "Kayıtlı Senaryo";
+    document.getElementById("modalText").innerText = foundScenario.text || "";
+    document.getElementById("modal").style.display = "flex";
+  }
+
+  // Kullanıcı "Yeniden Üret" derse:
+  function startNewScenario() {
+    closeExistModal();
+    proceedWithGeneration(pendingRow, pendingKey);
+  }
+
+  // -------------------- Feedback Modal Functions --------------------
+  function openFeedbackModal() {
+    document.getElementById("feedbackModal").style.display = "flex";
+  }
+  function closeFeedbackModal() {
+    document.getElementById("feedbackModal").style.display = "none";
+  }
+  function feedbackBackdropClose(e) {
+    if (e.target && e.target.id === "feedbackModal") closeFeedbackModal();
+  }
+
+  // -------------------- AI generation --------------------
+  
+  // Ana Tıklama Yönlendiricisi
+  async function handleAIClick(row, key) {
+    // Hafızada var mı kontrolü
+    const existing = getScenarioByKey(key);
+    
+    if (existing) {
+      // Varsa uyarı modülünü göster
+      pendingRow = row;
+      pendingKey = key;
+      foundScenario = existing;
+      document.getElementById("existModal").style.display = "flex";
+      return; 
+    }
+    
+    // Yoksa doğrudan API akışına git
+    await proceedWithGeneration(row, key);
+  }
+
+  // Gerçek Üretim Akışı
+  async function proceedWithGeneration(row, key) {
+    window.__lastRowForWord = row;
+    if (busyKey) return;
+    busyKey = key;
+
+    const btn = document.querySelector(`button[data-key="${cssEscape(key)}"]`);
+    if (btn) { btn.disabled = true; btn.textContent = "…"; }
+
+    showLoading();
+
+    try {
+      const desc = String(row["AÇIKLAMA"] || "").trim();
+      const contentType = String(row["E-İÇERİK TÜRÜ"] || "").toLowerCase();
+      // DÜZELTME: Kısa parçaları eleyerek "hazırlanır" gibi anlamsız seçenekleri engeller.
+      const parts = desc.split(/[\n;]+/).map(s => s.trim()).filter(s => s.length > 15);
+
+      const hasVideo = /video|film|belgesel/i.test(desc) || /video|film|belgesel/i.test(contentType);
+      const hasInteractive = /etkileşim|interaktif|oyun/i.test(desc) || /etkileşim|interaktif|oyun/i.test(contentType);
+      const hasSimulation = /simülasyon|simulasyon/i.test(desc) || /simülasyon|simulasyon/i.test(contentType);
+
+      let choices =[];
+      if (parts.length > 1) {
+        choices = parts.slice(0, 8).map((p, i) => {
+          const lp = p.toLowerCase();
+          let t = `Seçenek ${i+1}`;
+          if (lp.includes("video") || lp.includes("belgesel") || lp.includes("film")) t = "Video / Belgesel";
+          else if (lp.includes("simülasyon") || lp.includes("simulasyon")) t = "Simülasyon";
+          else if (lp.includes("etkileşim") || lp.includes("interaktif") || lp.includes("oyun")) t = "Etkileşimli / Oyun";
+          return ({ title: t, text: p });
+        });
+      } else if (hasVideo && (hasInteractive || hasSimulation)) {
+        choices =[
+          { title: "Video / Belgesel", text: "Video/Belgesel formatında üret." },
+          { title: hasSimulation ? "Simülasyon" : "Etkileşimli / Oyun", text: hasSimulation ? "Simülasyon formatında üret." : "Etkileşimli/Oyun formatında üret." }
+        ];
+      } else if (!hasVideo && !hasInteractive && !hasSimulation) {
+        choices =[
+          { title: "Video", text: "Video formatında üret." },
+          { title: "Etkileşimli / Oyun", text: "Etkileşimli/Oyun formatında üret." },
+          { title: "Simülasyon", text: "Simülasyon formatında üret." }
+        ];
+      }
+
+      let forced = null;
+      if (choices.length > 0) {
+        hideLoading();
+        const idx = await showChoiceModal(choices);
+        showLoading();
+
+        if (idx === null || typeof idx === "undefined") {
+          if (btn) { btn.disabled = false; btn.textContent = "AI"; }
+          busyKey = "";
+          hideLoading();
+          return;
+        }
+
+        if (parts.length > 1) {
+          forced = { forceChoiceText: choices[idx].text };
+        } else {
+          const chosenTitle = (choices[idx].title || "").toLowerCase();
+          let forceMode = null;
+          if (chosenTitle.includes("simül") || chosenTitle.includes("simul")) forceMode = "simulation";
+          else if (chosenTitle.includes("etkile") || chosenTitle.includes("oyun") || chosenTitle.includes("inter")) forceMode = "interactive";
+          else if (chosenTitle.includes("video") || chosenTitle.includes("belgesel") || chosenTitle.includes("film")) forceMode = "video";
+          forced = { forceMode };
+        }
+      }
+
+      const body = Object.assign({}, row);
+      if (forced) Object.assign(body, forced);
+
+      const r = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      const txt = await r.text();
+      let res;
+      try { res = JSON.parse(txt); }
+      catch { res = { title: "Sunucu Yanıtı", text: txt }; }
+
+      saveScenarioToHistory({
+        key: key, 
+        title: res.title || "E-İçerik Senaryo Dokümanı",
+        text: res.text || res.error || "",
+        rowMeta: row
+      });
+
+      document.getElementById("modalTitle").innerText =
+        res.title || (r.ok ? "AI Senaryosu" : "AI Hatası");
+
+      document.getElementById("modalText").innerText =
+        res.text || res.error || JSON.stringify(res, null, 2);
+
+      document.getElementById("modal").style.display = "flex";
+
+    } catch (e) {
+      document.getElementById("modalTitle").innerText = "Bağlantı Hatası";
+      document.getElementById("modalText").innerText = String(e);
+      document.getElementById("modal").style.display = "flex";
+    } finally {
+      busyKey = "";
+      if (btn) { btn.disabled = false; btn.textContent = "AI"; }
+      hideLoading();
+    }
+  }
+
+  // -------------------- Utils --------------------
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function cssEscape(str){ return String(str).replace(/["\\]/g, "\\$&"); }
 </script>
 </body>
 </html>
