@@ -560,84 +560,203 @@
   }
 
   function downloadPDF(){
-    const grade = gradeSelect.value;
-    const course = courseSelect.value;
-    if (!grade || !course) { alert("Önce sınıf ve ders seçiniz."); return; }
-    if (!filtered.length) { alert("PDF için kayıt bulunamadı."); return; }
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
-
-    const baseCourse = courseBaseName(course);
-    const header1 = "MEB E-İçerik Planlama Tablosu";
-    const header2 = `${baseCourse} – ${grade}. Sınıf   Toplam Kazanım: ${filtered.length}`;
-    const footerLeft = "Oluşturulma tarihi: 2026";
-
-    const fileName = sanitizeFileName(`${baseCourse} ${grade} E-İçerik Tablosu`) + ".pdf";
-
-    const head = [[ "SIRA", "ÜNİTE", "KAZANIM", "İÇERİK", "AÇIKLAMA" ]]; // ✅ AI yok
-
-    const body = filtered.map(d => ([
-      d["SIRA NO"] || "",
-      d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "",
-      d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "",
-      d["E-İÇERİK TÜRÜ"] || "",
-      d["AÇIKLAMA"] || ""
-    ]));
-
-    doc.setProperties({ title: `${baseCourse} ${grade} E-İçerik Tablosu` });
-
-    doc.autoTable({
-      head,
-      body,
-      startY: 26,
-      theme: "grid",
-      styles: {
-        font: "helvetica",
-        fontSize: 8.5,
-        cellPadding: 2.2,
-        overflow: "linebreak",
-        valign: "top"
-      },
-      headStyles: {
-        fillColor: [15, 27, 50],
-        textColor: [255, 255, 255],
-        fontStyle: "bold"
-      },
-      columnStyles: {
-        0: { cellWidth: 12 },   // SIRA
-        1: { cellWidth: 38 },   // ÜNİTE
-        2: { cellWidth: 68 },   // KAZANIM
-        3: { cellWidth: 30 },   // İÇERİK
-        4: { cellWidth: 132 }   // AÇIKLAMA (geniş)
-      },
-      margin: { left: 10, right: 10, top: 10, bottom: 14 },
-      didDrawPage: function (data) {
-        // Üst bilgi
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text(header1, 10, 12);
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.text(header2, 10, 18);
-
-        // Alt bilgi + sayfa numarası
-        const pageCount = doc.internal.getNumberOfPages();
-        const pageNo = doc.internal.getCurrentPageInfo().pageNumber;
-        const pageText = `Sayfa ${pageNo} / ${pageCount}`;
-
-        doc.setFontSize(9);
-        doc.setTextColor(80);
-        doc.text(footerLeft, 10, 202);
-
-        doc.text(pageText, 287 - doc.getTextWidth(pageText), 202); // sağ alt
-        doc.setTextColor(0);
-      }
-    });
-
-    doc.save(fileName);
+    async function loadFontBase64(url){
+  const res = await fetch(url);
+  const buf = await res.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i=0; i<bytes.length; i+=chunk){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i,i+chunk));
   }
+  return btoa(binary);
+}
+
+let __fontLoaded = false;
+async function ensureTurkishFont(doc){
+  if (__fontLoaded) return;
+
+  const base64 = await loadFontBase64("/fonts/NotoSans-Regular.ttf");
+
+  doc.addFileToVFS("NotoSans-Regular.ttf", base64);
+  doc.addFont("NotoSans-Regular.ttf", "NotoSans", "normal");
+  __fontLoaded = true;
+}
+
+function courseBaseName(courseStr){
+  const s = String(courseStr || "").trim();
+  return s.replace(/\s*\b\d+\b\s*$/,"").trim() || s;
+}
+function sanitizeFileName(name){
+  return String(name)
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120) || "E-İçerik Tablosu";
+}
+
+async function downloadPDF(){
+
+  const grade = gradeSelect.value;
+  const course = courseSelect.value;
+
+  if (!grade || !course) {
+    alert("Önce sınıf ve ders seçiniz");
+    return;
+  }
+
+  if (!filtered.length) {
+    alert("PDF için veri bulunamadı");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4"
+  });
+
+  await ensureTurkishFont(doc);
+  doc.setFont("NotoSans","normal");
+
+  const baseCourse = courseBaseName(course);
+
+  const headerTitle = "MEB E-İçerik Planlama Tablosu";
+  const headerSub =
+    `${baseCourse} – ${grade}. Sınıf   Toplam Kazanım: ${filtered.length}`;
+
+  const footerText = "Oluşturulma tarihi: 2026";
+
+  const fileName =
+    sanitizeFileName(`${baseCourse} ${grade} E-İçerik Tablosu`) + ".pdf";
+
+
+  const head = [[
+    "SIRA",
+    "ÜNİTE",
+    "KAZANIM",
+    "İÇERİK",
+    "AÇIKLAMA"
+  ]];
+
+  const body = filtered.map(d => ([
+    d["SIRA NO"] || "",
+    d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "",
+    d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "",
+    d["E-İÇERİK TÜRÜ"] || "",
+    d["AÇIKLAMA"] || ""
+  ]));
+
+
+  doc.autoTable({
+
+    head,
+    body,
+
+    startY: 32,
+
+    theme: "grid",
+
+    styles: {
+      font: "NotoSans",
+      fontSize: 10,
+      cellPadding: 3,
+      overflow: "linebreak",
+      valign: "top"
+    },
+
+    headStyles: {
+      fillColor: [10,30,60],
+      textColor: [255,255,255],
+      fontStyle: "bold",
+      halign: "center"
+    },
+
+    alternateRowStyles: {
+      fillColor: [245,247,250]   // zebra satır
+    },
+
+    columnStyles: {
+
+      0: { cellWidth: 12, halign:"center" },
+
+      1: { cellWidth: 34 },
+
+      2: { cellWidth: 65 },
+
+      3: { cellWidth: 30, halign:"center" },
+
+      4: { cellWidth: 136 }  // açıklama geniş
+
+    },
+
+    margin: { left:10, right:10, top:10, bottom:14 },
+
+    didDrawPage: function (data) {
+
+      const pageNo = doc.internal.getCurrentPageInfo().pageNumber;
+      const pageCount = doc.internal.getNumberOfPages();
+
+
+      /* ---- ÜST BAŞLIK SADECE 1. SAYFA ---- */
+
+      if(pageNo === 1){
+
+        doc.setFont("NotoSans","normal");
+
+        doc.setFontSize(16);
+
+        const titleWidth = doc.getTextWidth(headerTitle);
+
+        doc.text(
+          headerTitle,
+          (297 - titleWidth) / 2,
+          14
+        );
+
+        doc.setFontSize(12);
+
+        const subWidth = doc.getTextWidth(headerSub);
+
+        doc.text(
+          headerSub,
+          (297 - subWidth) / 2,
+          22
+        );
+
+      }
+
+
+      /* ---- ALT BİLGİ ---- */
+
+      doc.setFontSize(9);
+
+      doc.setTextColor(100);
+
+      doc.text(
+        footerText,
+        10,
+        203
+      );
+
+      const pageText = `Sayfa ${pageNo} / ${pageCount}`;
+
+      doc.text(
+        pageText,
+        287 - doc.getTextWidth(pageText),
+        203
+      );
+
+      doc.setTextColor(0);
+
+    }
+
+  });
+
+  doc.save(fileName);
+}
 
   // --- Result modal helpers ---
   function backdropClose(e){ if (e.target && e.target.id === "modal") closeModal(); }
@@ -851,3 +970,4 @@
 </script>
 </body>
 </html>
+
