@@ -470,7 +470,7 @@
     });
 
   function parseCSV(text, delimiter) {
-    const rows = [];
+    const rows =[];
     let row =[];
     let cur = "";
     let inQuotes = false;
@@ -825,13 +825,24 @@
   }
 
   // -------------------- Choice modal --------------------
+  let choiceResolveFn = null;
+
   function choiceBackdropClose(e){
     if (e.target && e.target.id === "choiceModal") closeChoiceModal();
   }
-  function closeChoiceModal(){ document.getElementById("choiceModal").style.display = "none"; }
+
+  function closeChoiceModal(){ 
+    document.getElementById("choiceModal").style.display = "none"; 
+    // Kullanıcı vazgeçtiyse bekleyen Promise'i null ile çöz ki sistem donmasın
+    if (choiceResolveFn) {
+      choiceResolveFn(null);
+      choiceResolveFn = null;
+    }
+  }
 
   function showChoiceModal(choices){
     return new Promise(resolve => {
+      choiceResolveFn = resolve;
       const modal = document.getElementById("choiceModal");
       const body = document.getElementById("choiceBody");
       body.innerHTML = "";
@@ -859,7 +870,13 @@
         btn.className = "btn btn-primary";
         btn.style.marginTop = "8px";
         btn.innerText = "Bu seçeneği üret";
-        btn.onclick = () => { modal.style.display = "none"; resolve(idx); };
+        btn.onclick = () => { 
+          modal.style.display = "none"; 
+          if (choiceResolveFn) {
+            choiceResolveFn(idx);
+            choiceResolveFn = null;
+          }
+        };
 
         cont.appendChild(title);
         cont.appendChild(txt);
