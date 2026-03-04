@@ -226,14 +226,15 @@
   @keyframes spin{ to{ transform:rotate(360deg); } }
   #loadingText{ font-size:14px; color:#eaf0ff; }
 
-  /* Geri Bildirim Butonu */
+  /* Geri Bildirim Butonu (Hover ile Genişleyen Model) */
   .feedback-btn {
     position: fixed;
     bottom: 25px;
     right: 25px;
     background: linear-gradient(135deg, #4f8cff, #3b5bdb);
     color: white;
-    padding: 12px 22px;
+    width: 52px;
+    height: 52px;
     border-radius: 50px;
     border: none;
     font-weight: 600;
@@ -243,12 +244,25 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
+    justify-content: center;
+    overflow: hidden;
+    transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), padding 0.3s ease;
+    white-space: nowrap;
+  }
+  .feedback-btn .f-text {
+    opacity: 0;
+    width: 0;
+    transition: opacity 0.2s ease, margin 0.2s ease;
   }
   .feedback-btn:hover {
-    transform: translateY(-3px);
-    filter: brightness(1.1);
+    width: 190px;
+    padding: 0 20px;
+    justify-content: flex-start;
+  }
+  .feedback-btn:hover .f-text {
+    opacity: 1;
+    width: auto;
+    margin-left: 10px;
   }
 
   @media (max-width:720px){
@@ -392,7 +406,8 @@
   </div>
 
   <button class="feedback-btn" onclick="openFeedbackModal()">
-    <span>💬 Görüş / Hata Bildir</span>
+    <span style="font-size: 20px;">💬</span>
+    <span class="f-text">Görüş / Hata Bildir</span>
   </button>
 
 <script>
@@ -995,7 +1010,7 @@
     try {
       const desc = String(row["AÇIKLAMA"] || "").trim();
       const contentType = String(row["E-İÇERİK TÜRÜ"] || "").toLowerCase();
-      // DÜZELTME: Noktalı virgülden dolayı oluşan kısa ve anlamsız parçaları (ör: "hazırlanır.") eler
+      // DÜZELTME: Kısa parçaları eleyerek "hazırlanır" gibi anlamsız seçenekleri engeller.
       const parts = desc.split(/[\n;]+/).map(s => s.trim()).filter(s => s.length > 15);
 
       const hasVideo = /video|film|belgesel/i.test(desc) || /video|film|belgesel/i.test(contentType);
