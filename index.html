@@ -315,14 +315,14 @@
       <div class="panel-actions">
         <button class="btn btn-primary" onclick="copyModal()">Kopyala</button>
         <button class="btn" onclick="downloadWord()">Word indir</button>
-        <button class="btn" onclick="openLastScenario()">Son Senaryo</button>
+        <button class="btn" onclick="openLastScenario()">Son Üretilen (Genel)</button>
         <button class="btn" onclick="clearScenarioHistory()">Geçmişi Sil</button>
         <button class="btn" onclick="closeModal()">Kapat</button>
       </div>
     </div>
   </div>
 
-  <!-- Choice modal -->
+  <!-- Choice modal (Birden fazla içerik türü varsa) -->
   <div class="modal" id="choiceModal" onclick="choiceBackdropClose(event)">
     <div class="panel" style="width:520px; max-width:96vw;">
       <div class="panel-head">
@@ -336,11 +336,36 @@
     </div>
   </div>
 
+  <!-- Zaten var modal (Daha önce üretildiyse uyarır) -->
+  <div class="modal" id="existModal" onclick="existBackdropClose(event)">
+    <div class="panel" style="width:460px; max-width:96vw;">
+      <div class="panel-head">
+        <h3 style="color:#4f8cff;">Daha Önce Üretilmiş!</h3>
+        <button class="btn" onclick="closeExistModal()">İptal</button>
+      </div>
+      <div class="panel-body">
+        <p style="font-size:14px; color:var(--text); line-height:1.6; margin:0;">
+          Bu satır (kazanım) için daha önce bir senaryo üretmişsiniz.<br><br>
+          <span style="color:var(--muted);">Kayıtlı senaryoyu hemen görmek mi istersiniz, yoksa yeniden (belki farklı bir türde) üretmek mi istersiniz?</span>
+        </p>
+      </div>
+      <div class="panel-actions" style="justify-content:flex-end;">
+        <button class="btn" onclick="startNewScenario()">Yeniden Üret</button>
+        <button class="btn btn-primary" onclick="showOldScenario()">Kayıtlı Eskiyi Göster</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   // -------------------- State --------------------
-  let data = [];
+  let data =[];
   let filtered =[];
   let busyKey = "";
+
+  // Onay bekleyen satır bilgileri (Exist Modal için)
+  let pendingRow = null;
+  let pendingKey = "";
+  let foundScenario = null;
 
   const statusEl = document.getElementById("status");
   const countEl = document.getElementById("count");
@@ -351,16 +376,28 @@
   const pdfBtn = document.getElementById("pdfBtn");
 
   // -------------------- Scenario history --------------------
-  const HISTORY_KEY = "icerik_tablo_scenario_history_v1";
+  const HISTORY_KEY = "icerik_tablo_scenario_history_v2";
 
   function saveScenarioToHistory(payload){
-    const max = 10;
+    const max = 50; 
     const item = { ...payload, savedAt: new Date().toISOString() };
     let arr =[];
     try { arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch {}
+    
+    if (item.key) {
+      arr = arr.filter(x => x.key !== item.key);
+    }
+    
     arr.unshift(item);
     arr = arr.slice(0, max);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
+  }
+
+  function getScenarioByKey(key) {
+    try {
+      const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      return arr.find(x => x.key === key) || null;
+    } catch { return null; }
   }
 
   function getLastScenario(){
@@ -380,9 +417,10 @@
   }
 
   function clearScenarioHistory(){
-    if (!confirm("Kaydedilmiş senaryo geçmişi silinsin mi?")) return;
+    if (!confirm("Kaydedilmiş senaryo geçmişi tamamen silinsin mi?")) return;
     localStorage.removeItem(HISTORY_KEY);
     alert("Geçmiş silindi.");
+    closeModal();
   }
 
   // -------------------- Loading overlay --------------------
@@ -468,7 +506,7 @@
 
   // -------------------- Filters --------------------
   function initFilters() {
-    const grades = [...new Set(data.map(d => String(d["SINIF"]).trim()))]
+    const grades =[...new Set(data.map(d => String(d["SINIF"]).trim()))]
       .filter(Boolean)
       .sort((a,b) => Number(a) - Number(b));
 
@@ -555,15 +593,23 @@
         <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
         <td class="col-ai"><button class="ai-btn" data-key="${escapeHtml(key)}">AI</button></td>
       `;
-      tr.querySelector("button").onclick = () => generateAI(d, key);
+      tr.querySelector("button").onclick = () => handleAIClick(d, key);
       tbody.appendChild(tr);
     });
   }
 
   // -------------------- PDF helpers --------------------
-  async function loadFontBase64(url){
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Font yüklenemedi: " + url + " (HTTP " + res.status + ")");
+  
+  // Eğer url bulunamazsa (örneğin Medium fontu repoya yüklenmediyse) fallbackUrl kullanması için ayarlandı.
+  async function loadFontBase64(url, fallbackUrl = null){
+    let res = await fetch(url);
+    if (!res.ok) {
+      if (fallbackUrl) {
+          console.warn(`${url} bulunamadı, çökmemesi için alternatif olarak ${fallbackUrl} yükleniyor...`);
+          res = await fetch(fallbackUrl);
+      }
+      if (!res.ok) throw new Error("Font yüklenemedi: " + url + " (HTTP " + res.status + ")");
+    }
     const buf = await res.arrayBuffer();
     let binary = "";
     const bytes = new Uint8Array(buf);
@@ -578,28 +624,27 @@
   async function ensureTurkishFont(doc){
     if (__fontsLoaded) return;
     
-    // Güvenilir bir genel ağ bağlantısından (CDN) Türkçe destekli Roboto fontlarını alıyoruz.
-    const urlRegular = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf";
-    const urlMedium = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf";
+    // Artık doğrudan reponuzdaki /fonts klasöründen çekiyor. Çok daha hızlı ve güvenli.
+    const urlRegular = "/fonts/Roboto-Regular.ttf";
+    const urlMedium = "/fonts/Roboto-Medium.ttf"; 
     
     try {
+      // urlMedium bulunamazsa otomatik olarak urlRegular'ı fallback olarak kullanacak, böylece PDF patlamayacak.
       const[base64Regular, base64Medium] = await Promise.all([
         loadFontBase64(urlRegular),
-        loadFontBase64(urlMedium)
+        loadFontBase64(urlMedium, urlRegular)
       ]);
       
-      // Normal font (Tablo içeriği için)
       doc.addFileToVFS("Roboto-Regular.ttf", base64Regular);
       doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
       
-      // Kalın font (Tablo başlıkları ve vurgular için)
       doc.addFileToVFS("Roboto-Medium.ttf", base64Medium);
       doc.addFont("Roboto-Medium.ttf", "Roboto", "bold");
       
       __fontsLoaded = true;
     } catch (e) {
       console.error("Font yükleme hatası:", e);
-      alert("PDF fontları yüklenirken bir hata oluştu. İnternet bağlantınızı kontrol ediniz.");
+      alert("PDF fontları yerel dizinden yüklenirken bir hata oluştu. Lütfen /fonts klasörünü kontrol ediniz.");
       throw e;
     }
   }
@@ -642,7 +687,7 @@
       const footerText = "Oluşturulma tarihi: " + new Date().toLocaleDateString("tr-TR");
       const fileName = sanitizeFileName(`${baseCourse} ${grade} E-İçerik Tablosu`) + ".pdf";
 
-      const head = [[ "SIRA", "ÜNİTE", "KAZANIM", "İÇERİK", "AÇIKLAMA" ]]; // AI yok
+      const head = [[ "SIRA", "ÜNİTE", "KAZANIM", "İÇERİK", "AÇIKLAMA" ]];
 
       const body = filtered.map(d => ([
         d["SIRA NO"] || "",
@@ -667,7 +712,7 @@
           valign: "top"
         },
         headStyles: {
-          fillColor: [10,30,60],
+          fillColor:[10,30,60],
           textColor:[255,255,255],
           fontStyle: "bold",
           halign: "center"
@@ -686,7 +731,6 @@
         didDrawPage: function () {
           const pageNo = doc.internal.getCurrentPageInfo().pageNumber;
 
-          // ÜST BAŞLIK sadece 1. sayfa
           if (pageNo === 1) {
             doc.setFont("Roboto", "bold");
             doc.setFontSize(16);
@@ -697,7 +741,6 @@
             doc.text(headerSub, (297 - doc.getTextWidth(headerSub))/2, 22);
           }
 
-          // ALT BİLGİ her sayfa
           doc.setFontSize(9);
           doc.setTextColor(100);
           doc.text(footerText, 10, 203);
@@ -708,7 +751,6 @@
         }
       });
 
-      // Toplam sayfa sayısını otomatik güncelleme
       if (typeof doc.putTotalPages === 'function') {
         doc.putTotalPages(totalPagesExp);
       }
@@ -815,8 +857,51 @@
     });
   }
 
+  // -------------------- Existing Scenario Modal --------------------
+  function existBackdropClose(e) {
+    if (e.target && e.target.id === "existModal") closeExistModal();
+  }
+  function closeExistModal() {
+    document.getElementById("existModal").style.display = "none";
+  }
+
+  // Kullanıcı "Kayıtlı Eskiyi Göster" derse:
+  function showOldScenario() {
+    closeExistModal();
+    window.__lastRowForWord = foundScenario.rowMeta || null;
+    document.getElementById("modalTitle").innerText = foundScenario.title || "Kayıtlı Senaryo";
+    document.getElementById("modalText").innerText = foundScenario.text || "";
+    document.getElementById("modal").style.display = "flex";
+  }
+
+  // Kullanıcı "Yeniden Üret" derse:
+  function startNewScenario() {
+    closeExistModal();
+    proceedWithGeneration(pendingRow, pendingKey);
+  }
+
   // -------------------- AI generation --------------------
-  async function generateAI(row, key) {
+  
+  // Ana Tıklama Yönlendiricisi
+  async function handleAIClick(row, key) {
+    // Hafızada var mı kontrolü
+    const existing = getScenarioByKey(key);
+    
+    if (existing) {
+      // Varsa uyarı modülünü göster
+      pendingRow = row;
+      pendingKey = key;
+      foundScenario = existing;
+      document.getElementById("existModal").style.display = "flex";
+      return; 
+    }
+    
+    // Yoksa doğrudan API akışına git
+    await proceedWithGeneration(row, key);
+  }
+
+  // Gerçek Üretim Akışı
+  async function proceedWithGeneration(row, key) {
     window.__lastRowForWord = row;
     if (busyKey) return;
     busyKey = key;
@@ -898,6 +983,7 @@
       catch { res = { title: "Sunucu Yanıtı", text: txt }; }
 
       saveScenarioToHistory({
+        key: key, 
         title: res.title || "E-İçerik Senaryo Dokümanı",
         text: res.text || res.error || "",
         rowMeta: row
