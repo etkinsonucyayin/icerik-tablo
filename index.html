@@ -945,7 +945,7 @@
     try {
       const desc = String(row["AÇIKLAMA"] || "").trim();
       const contentType = String(row["E-İÇERİK TÜRÜ"] || "").toLowerCase();
-      const parts = desc.split(/[\n;]+/).map(s => s.trim()).filter(Boolean);
+      const parts = desc.split(/[\n;]+/).map(s => s.trim()).filter(s => s.length > 15);
 
       const hasVideo = /video|film|belgesel/i.test(desc) || /video|film|belgesel/i.test(contentType);
       const hasInteractive = /etkileşim|interaktif|oyun/i.test(desc) || /etkileşim|interaktif|oyun/i.test(contentType);
@@ -1053,3 +1053,4 @@
 </script>
 </body>
 </html>
+
