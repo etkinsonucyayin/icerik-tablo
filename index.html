@@ -120,7 +120,32 @@
   .col-unit{ width:180px; }
   .col-kaz{ width:320px; }
   .col-icerik{ width:170px; }
-  .col-ai{ width:80px; text-align:right; }
+  .col-eba{ width:90px; text-align:center; }
+  .col-ai{ width:70px; text-align:center; }
+
+  .eba-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:6px 10px;
+    background:#1a56a0;
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    text-decoration:none;
+    white-space:nowrap;
+    transition:filter .15s;
+  }
+  .eba-btn:hover{ filter:brightness(1.15); }
+  .eba-btn.disabled{
+    background:rgba(255,255,255,.07);
+    color:rgba(255,255,255,.25);
+    cursor:default;
+    pointer-events:none;
+  }
 
   .ai-btn{
     border:1px solid rgba(79,140,255,.45);
@@ -321,6 +346,7 @@
               <th class="col-kaz">KAZANIM</th>
               <th class="col-icerik">İÇERİK</th>
               <th>AÇIKLAMA</th>
+              <th class="col-eba">EBA ÖRNEK</th>
               <th class="col-ai">AI</th>
             </tr>
           </thead>
@@ -649,18 +675,24 @@
         ? `<button class="ai-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Bu içerik için AI senaryosu oluşturulamaz">Yok</button>`
         : `<button class="ai-btn" data-key="${escapeHtml(key)}">AI</button>`;
 
+      const ebaUrl = String(d["EBA_URL"] || "").trim();
+      const ebaCellHTML = ebaUrl
+        ? `<a class="eba-btn" href="${escapeHtml(ebaUrl)}" target="_blank" rel="noopener noreferrer" title="EBA'da örnek içeriği görüntüle">📘 Görüntüle</a>`
+        : `<span class="eba-btn disabled" title="Henüz örnek içerik eklenmedi">📘 Yakında</span>`;
+
       tr.innerHTML = `
         <td class="col-sira">${escapeHtml(d["SIRA NO"] || "")}</td>
         <td class="col-unit">${escapeHtml(d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "")}</td>
         <td class="col-kaz">${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
         <td class="col-icerik">${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
         <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
+        <td class="col-eba">${ebaCellHTML}</td>
         <td class="col-ai">${aiCellHTML}</td>
       `;
       
       // Eğer pasif değilse, butona tıklama (AI üretme) özelliğini ekle
       if (!aiPasifMi) {
-        tr.querySelector("button").onclick = () => handleAIClick(d, key);
+        tr.querySelector("button.ai-btn").onclick = () => handleAIClick(d, key);
       }
       
       tbody.appendChild(tr);
