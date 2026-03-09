@@ -411,6 +411,66 @@ function selectBestTemplate(bloomLevel, mode, desc = "") {
   return bloomDefaults[bloomLevel] || "siniflandirma_oyunu";
 }
 
+// ─── Harici Prompt Üretici ───────────────────────────────────────────────────
+async function buildExternalPrompt({ openai, grade, course, unit, outcome, contentType, desc, userRequest }) {
+  const bloomLevel = detectBloomLevel(outcome);
+  const cogProfile = getCognitiveProfile(grade);
+
+  // İçerik türü ipucu
+  const contentHint = (() => {
+    const d = (desc + " " + contentType).toLowerCase();
+    if (/video|animasyon|belgesel|sanal.*tur/.test(d)) return "video veya animasyon";
+    if (/simülasyon|simulasyon/.test(d)) return "simülasyon";
+    if (/etkileşim|interaktif|oyun/.test(d)) return "etkileşimli içerik veya oyun";
+    if (/sürükle|eşleştir|sırala/.test(d)) return "sürükle-bırak etkileşimi";
+    return "eğitim içeriği";
+  })();
+
+  const systemMsg = `Sen MEB müfredatına ve Articulate Storyline 360 ile video animasyon üretim süreçlerine hâkim bir öğretim tasarımcısısın.
+Görevin: Bir alan yazarının herhangi bir yapay zekâya (ChatGPT, Claude, Gemini vb.) girerek e-içerik senaryosu üretebileceği, kopyala-yapıştır hazır, model-agnostik, Türkçe bir prompt yazmak.
+
+PROMPT YAZIM KURALLARI:
+- Prompt Türkçe olacak
+- Prompt bağımsız çalışmalı — karşı tarafa bağlam tamamen verilecek
+- Prompt şu bölümleri içerecek: [BAĞLAM], [GÖREV], [KISITLAR], [ÇIKTI FORMATI]
+- Kısıtlar bölümünde Storyline 360 teknik sınırlılıkları ve müfredat sınırları yer alacak
+- Çıktı formatı bölümünde ekran ekran senaryo, seslendirme metni ve yapımcı notları istenecek
+- Prompt, "Sen bir öğretim tasarımcısısın..." diye başlayacak
+- Sonuna "Bu promptu ChatGPT, Claude, Gemini veya istediğiniz yapay zekâya yapıştırabilirsiniz." notu EKLEME — bunu sistem zaten söylüyor`;
+
+  const userMsg = `Şu bilgilerle prompt yaz:
+- Sınıf: ${grade}. Sınıf | Ders: ${course} | Ünite: ${unit}
+- Kazanım: ${outcome}
+- İçerik Türü: ${contentType} | Açıklama: ${desc || "(belirtilmemiş)"}
+- Bloom Seviyesi: ${bloomLevel} | Bilişsel Profil: ${cogProfile.stage}
+- Yaş Notu: ${cogProfile.ageNote}
+- İçerik Yönelimi: ${contentHint}
+${userRequest ? `
+- Yazarın Özel İsteği: "${userRequest}"` : ""}
+
+Prompt içinde şu KISITLARI mutlaka belirt:
+1. Articulate Storyline 360 ile üretilecek (teknik kısıtlar: max ${cogProfile.maxSlides} ekran, SCORM 1.2, EBA uyumlu)
+2. Video/animasyon varsa: MP4 H.264 720p max, SRT altyazı zorunlu, 100MB limit
+3. ${grade}. sınıf dil seviyesi: ${cogProfile.lang}
+4. TTKB kırmızı çizgiler: müfredat sınırları aşılmayacak
+5. Dönütler "Tebrikler/Yanlış" değil, açıklayıcı 2 cümle olacak`;
+
+  try {
+    const r = await openai.chat.completions.create({
+      model: "gpt-4o",
+      temperature: 0.2,
+      max_tokens: 1200,
+      messages: [
+        { role: "system", content: systemMsg },
+        { role: "user", content: userMsg }
+      ]
+    });
+    return r.choices?.[0]?.message?.content || "Prompt üretilemedi.";
+  } catch(e) {
+    return "Prompt üretilirken hata: " + String(e.message || e);
+  }
+}
+
 // ─── Ana handler ──────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   try {
@@ -428,6 +488,15 @@ module.exports = async function handler(req, res) {
     let   desc        = String(row["AÇIKLAMA"] ?? "").trim();
     if (row.forceChoiceText) desc = String(row.forceChoiceText).trim();
     const ebaUrl      = String(row["EBA_URL"] ?? "").trim();
+
+    // ── PROMPT MODU: Yazara kopyalanabilir prompt üret ───────────────────────
+    if (row.promptMode === true) {
+      const userRequest = String(row.userRequest || "").trim();
+      const generatedPrompt = await buildExternalPrompt({
+        openai, grade, course, unit, outcome, contentType, desc, userRequest
+      });
+      return res.status(200).json({ prompt: generatedPrompt });
+    }
 
     const mode       = row.forceMode ? String(row.forceMode) : pickContentMode(contentType);
     const bloomLevel = detectBloomLevel(outcome);
