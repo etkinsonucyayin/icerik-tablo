@@ -120,32 +120,10 @@
   .col-unit{ width:180px; }
   .col-kaz{ width:320px; }
   .col-icerik{ width:170px; }
-  .col-eba{ width:90px; text-align:center; }
-  .col-ai{ width:70px; text-align:center; }
+  .col-ai{ width:145px; text-align:right; }
 
-  .eba-btn{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    padding:6px 10px;
-    background:#1a56a0;
-    color:#fff;
-    border:none;
-    border-radius:8px;
-    font-size:12px;
-    font-weight:600;
-    cursor:pointer;
-    text-decoration:none;
-    white-space:nowrap;
-    transition:filter .15s;
-  }
-  .eba-btn:hover{ filter:brightness(1.15); }
-  .eba-btn.disabled{
-    background:rgba(255,255,255,.07);
-    color:rgba(255,255,255,.25);
-    cursor:default;
-    pointer-events:none;
-  }
+  /* İkili buton grubu */
+  .action-cell{ display:flex; gap:5px; justify-content:flex-end; align-items:center; flex-wrap:wrap; }
 
   .ai-btn{
     border:1px solid rgba(79,140,255,.45);
@@ -160,6 +138,65 @@
   }
   .ai-btn:hover{ filter:brightness(1.04); }
   .ai-btn:disabled{ opacity:.7; cursor:not-allowed; }
+
+  .prompt-btn{
+    border:1px solid rgba(168,130,255,.5);
+    background: linear-gradient(135deg, rgba(130,100,230,.9), rgba(100,70,200,.6));
+    color:white;
+    font-weight:700;
+    padding:8px 7px;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:11px;
+    white-space:nowrap;
+    box-shadow:0 6px 14px rgba(130,100,230,.2);
+  }
+  .prompt-btn:hover{ filter:brightness(1.08); }
+
+  /* Prompt Modalı */
+  #promptModal{
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+    z-index:1100; align-items:center; justify-content:center;
+  }
+  #promptModal .pm-box{
+    background:var(--card); border:1px solid var(--line2);
+    border-radius:18px; padding:28px 26px; width:min(560px,94vw);
+    display:flex; flex-direction:column; gap:14px;
+  }
+  #promptModal h3{ margin:0; font-size:16px; color:var(--text); }
+  #promptModal p.pm-sub{ margin:0; font-size:12px; color:var(--muted); line-height:1.5; }
+  #pmUserInput{
+    width:100%; box-sizing:border-box;
+    background:rgba(255,255,255,.07); border:1px solid var(--line2);
+    border-radius:10px; color:var(--text); padding:10px 12px;
+    font-size:13px; resize:vertical; min-height:72px; font-family:inherit;
+  }
+  #pmUserInput:focus{ outline:none; border-color:rgba(130,100,230,.6); }
+  .pm-actions{ display:flex; gap:8px; justify-content:flex-end; }
+  .pm-actions button{ padding:8px 18px; border-radius:10px; cursor:pointer; font-size:13px; font-weight:600; border:none; }
+  #pmCancel{ background:rgba(255,255,255,.08); color:var(--text); }
+  #pmGenerate{ background:linear-gradient(135deg,rgba(130,100,230,.95),rgba(100,70,200,.7)); color:white; }
+
+  /* Üretilen prompt alanı */
+  #promptResultBox{ display:none; flex-direction:column; gap:10px; }
+  #promptResultText{
+    background:rgba(0,0,0,.25); border:1px solid rgba(130,100,230,.35);
+    border-radius:10px; padding:14px; font-size:12.5px; line-height:1.7;
+    color:var(--text); white-space:pre-wrap; max-height:340px; overflow-y:auto;
+    font-family: 'Courier New', monospace;
+  }
+  .pm-copy-row{ display:flex; gap:8px; align-items:center; }
+  #pmCopyBtn{
+    padding:7px 16px; border-radius:9px; background:rgba(130,100,230,.8);
+    color:white; border:none; cursor:pointer; font-weight:600; font-size:12px;
+  }
+  #pmCopyHint{ font-size:11px; color:var(--muted); }
+  #pmUseHereBtn{
+    padding:7px 16px; border-radius:9px;
+    background:rgba(79,140,255,.8); color:white;
+    border:none; cursor:pointer; font-weight:600; font-size:12px;
+  }
 
   .hint{ font-size:12px; color:var(--muted); padding:10px 14px 0; }
 
@@ -346,8 +383,7 @@
               <th class="col-kaz">KAZANIM</th>
               <th class="col-icerik">İÇERİK</th>
               <th>AÇIKLAMA</th>
-              <th class="col-eba">EBA ÖRNEK</th>
-              <th class="col-ai">AI</th>
+              <th class="col-ai">ARAÇLAR</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -355,6 +391,33 @@
       </div>
 
       <div class="hint">İpucu: AI tıklanınca açıklamada birden fazla istek varsa önce “hangisi?” sorulur.</div>
+    </div>
+  </div>
+
+  <!-- ─── Prompt Üretici Modal ─────────────────────────────────── -->
+  <div id="promptModal">
+    <div class="pm-box">
+      <h3>✨ Yapay Zekâ Promptu Oluştur</h3>
+      <p class="pm-sub">
+        Kazanım, açıklama ve yapım sınırlılıkları otomatik eklenir.<br>
+        Siz sadece ne istediğinizi kısaca yazın.
+      </p>
+      <textarea id="pmUserInput" placeholder="Örn: 'Öğrencilerin kavramları eşleştireceği eğlenceli bir oyun istiyorum.' veya 'Sanal müze turu şeklinde animasyonlu bir video senaryosu yap.' veya boş bırakın — sistem otomatik karar verir."></textarea>
+      <div class="pm-actions">
+        <button id="pmCancel">Vazgeç</button>
+        <button id="pmGenerate">Prompt Üret →</button>
+      </div>
+      <div id="promptResultBox">
+        <p style="margin:0; font-size:12px; color:var(--muted);">
+          📋 Aşağıdaki promptu kopyalayıp <strong>ChatGPT, Claude, Gemini</strong> veya istediğiniz herhangi bir yapay zekâya yapıştırın:
+        </p>
+        <div id="promptResultText"></div>
+        <div class="pm-copy-row">
+          <button id="pmCopyBtn">📋 Kopyala</button>
+          <button id="pmUseHereBtn">⚡ Bu Sistemde Kullan</button>
+          <span id="pmCopyHint"></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -672,13 +735,11 @@
 
       // Eğer "yok" ise butonu tıklanamaz (disabled) ve soluk yapıyoruz
       const aiCellHTML = aiPasifMi
-        ? `<button class="ai-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Bu içerik için AI senaryosu oluşturulamaz">Yok</button>`
-        : `<button class="ai-btn" data-key="${escapeHtml(key)}">AI</button>`;
-
-      const ebaUrl = String(d["EBA_URL"] || "").trim();
-      const ebaCellHTML = ebaUrl
-        ? `<a class="eba-btn" href="${escapeHtml(ebaUrl)}" target="_blank" rel="noopener noreferrer" title="EBA'da örnek içeriği görüntüle">📘 Görüntüle</a>`
-        : `<span class="eba-btn disabled" title="Henüz örnek içerik eklenmedi">📘 Yakında</span>`;
+        ? `<div class="action-cell"><button class="ai-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Bu içerik için AI desteği mevcut değil">Yok</button></div>`
+        : `<div class="action-cell">
+            <button class="prompt-btn" data-prompt-key="${escapeHtml(key)}">✨ Prompt</button>
+            <button class="ai-btn" data-key="${escapeHtml(key)}">AI</button>
+           </div>`;
 
       tr.innerHTML = `
         <td class="col-sira">${escapeHtml(d["SIRA NO"] || "")}</td>
@@ -686,13 +747,13 @@
         <td class="col-kaz">${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
         <td class="col-icerik">${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
         <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
-        <td class="col-eba">${ebaCellHTML}</td>
         <td class="col-ai">${aiCellHTML}</td>
-      `;
+      \`;
       
-      // Eğer pasif değilse, butona tıklama (AI üretme) özelliğini ekle
+      // Eğer pasif değilse, butonlara tıklama özelliği ekle
       if (!aiPasifMi) {
         tr.querySelector("button.ai-btn").onclick = () => handleAIClick(d, key);
+        tr.querySelector("button.prompt-btn").onclick = () => handlePromptClick(d, key);
       }
       
       tbody.appendChild(tr);
@@ -1007,6 +1068,95 @@
   function feedbackBackdropClose(e) {
     if (e.target && e.target.id === "feedbackModal") closeFeedbackModal();
   }
+
+  // -------------------- Prompt Üretici --------------------
+
+  let promptRow = null;  // Prompt için bekleyen satır
+
+  function handlePromptClick(row, key) {
+    promptRow = { row, key };
+    // Input'u temizle, sonuç kutusunu gizle
+    document.getElementById("pmUserInput").value = "";
+    document.getElementById("promptResultBox").style.display = "none";
+    document.getElementById("pmCopyHint").textContent = "";
+    document.getElementById("promptModal").style.display = "flex";
+    setTimeout(() => document.getElementById("pmUserInput").focus(), 80);
+  }
+
+  document.getElementById("pmCancel").onclick = () => {
+    document.getElementById("promptModal").style.display = "none";
+    promptRow = null;
+  };
+
+  document.getElementById("pmGenerate").onclick = async () => {
+    if (!promptRow) return;
+    const btn = document.getElementById("pmGenerate");
+    const userRequest = document.getElementById("pmUserInput").value.trim();
+
+    btn.disabled = true;
+    btn.textContent = "Oluşturuluyor…";
+
+    try {
+      const body = Object.assign({}, promptRow.row, {
+        promptMode: true,
+        userRequest: userRequest || ""
+      });
+
+      const r = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      const generatedPrompt = data.prompt || data.text || data.error || "Prompt üretilemedi.";
+
+      document.getElementById("promptResultText").textContent = generatedPrompt;
+      document.getElementById("promptResultBox").style.display = "flex";
+
+      // "Bu Sistemde Kullan" butonu — promptu AI endpoint'ine gönder
+      document.getElementById("pmUseHereBtn").onclick = async () => {
+        document.getElementById("promptModal").style.display = "none";
+        const { row, key } = promptRow;
+        // Prompt'u forceChoiceText olarak ekle ve normal AI akışına ver
+        const augmentedRow = Object.assign({}, row, { forceChoiceText: generatedPrompt, promptAsInput: true });
+        await proceedWithGeneration(augmentedRow, key);
+        promptRow = null;
+      };
+
+    } catch(e) {
+      document.getElementById("promptResultText").textContent = "Hata: " + String(e);
+      document.getElementById("promptResultBox").style.display = "flex";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Prompt Üret →";
+    }
+  };
+
+  document.getElementById("pmCopyBtn").onclick = () => {
+    const txt = document.getElementById("promptResultText").textContent;
+    navigator.clipboard.writeText(txt).then(() => {
+      document.getElementById("pmCopyHint").textContent = "✓ Kopyalandı!";
+      setTimeout(() => document.getElementById("pmCopyHint").textContent = "", 2500);
+    }).catch(() => {
+      // Fallback
+      const ta = document.createElement("textarea");
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      document.getElementById("pmCopyHint").textContent = "✓ Kopyalandı!";
+      setTimeout(() => document.getElementById("pmCopyHint").textContent = "", 2500);
+    });
+  };
+
+  // Prompt modal dışına tıklayınca kapat
+  document.getElementById("promptModal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("promptModal")) {
+      document.getElementById("promptModal").style.display = "none";
+      promptRow = null;
+    }
+  });
 
   // -------------------- AI generation --------------------
   
