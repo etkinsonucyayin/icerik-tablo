@@ -118,10 +118,10 @@
 
   .col-sira{ width:70px; color:var(--muted); }
   .col-unit{ width:180px; }
-  .col-kaz{ width:280px; }
-  .col-icerik{ width:130px; }
+  .col-kaz{ width:320px; }
+  .col-icerik{ width:170px; }
   .col-eba{ width:90px; text-align:center; }
-  .col-ai{ width:108px; text-align:right; }
+  .col-ai{ width:100px; }
 
   .eba-btn{
     display:inline-flex;
@@ -148,47 +148,35 @@
   }
 
   /* İkili buton grubu */
-  .action-cell{ display:flex; flex-direction:column; gap:4px; width:100%; }
+  .action-cell{ display:flex; flex-direction:column; gap:4px; }
 
   .ai-btn{
     border:1px solid rgba(79,140,255,.45);
-    background: linear-gradient(135deg, rgba(79,140,255,.95), rgba(79,140,255,.55));
-    color:white;
-    font-weight:700;
-    padding:7px 4px;
-    border-radius:9px;
-    cursor:pointer;
-    font-size:12px;
-    text-align:center;
-    box-shadow:0 4px 12px rgba(79,140,255,.22);
+    background:linear-gradient(135deg,rgba(79,140,255,.95),rgba(79,140,255,.55));
+    color:white; font-weight:700; padding:6px 4px;
+    border-radius:9px; cursor:pointer;
+    font-size:12px; text-align:center;
+    box-shadow:0 4px 12px rgba(79,140,255,.2);
   }
   .ai-btn:hover{ filter:brightness(1.04); }
   .ai-btn:disabled{ opacity:.7; cursor:not-allowed; }
 
   .prompt-btn{
     border:1px solid rgba(168,130,255,.5);
-    background: linear-gradient(135deg, rgba(130,100,230,.9), rgba(100,70,200,.6));
-    color:white;
-    font-weight:700;
-    padding:7px 4px;
-    border-radius:9px;
-    cursor:pointer;
-    font-size:11px;
-    text-align:center;
+    background:linear-gradient(135deg,rgba(130,100,230,.9),rgba(100,70,200,.6));
+    color:white; font-weight:700; padding:6px 4px;
+    border-radius:9px; cursor:pointer;
+    font-size:11px; text-align:center;
     box-shadow:0 4px 10px rgba(130,100,230,.2);
   }
   .prompt-btn:hover{ filter:brightness(1.08); }
 
   .hayat-btn{
     border:1px solid rgba(52,199,89,.5);
-    background: linear-gradient(135deg, rgba(34,160,70,.92), rgba(22,110,48,.7));
-    color:white;
-    font-weight:700;
-    padding:7px 4px;
-    border-radius:9px;
-    cursor:pointer;
-    font-size:11px;
-    text-align:center;
+    background:linear-gradient(135deg,rgba(34,160,70,.92),rgba(22,110,48,.7));
+    color:white; font-weight:700; padding:6px 4px;
+    border-radius:9px; cursor:pointer;
+    font-size:11px; text-align:center;
     box-shadow:0 4px 10px rgba(34,160,70,.2);
   }
   .hayat-btn:hover{ filter:brightness(1.1); transform:translateY(-1px); transition:.15s; }
@@ -874,7 +862,7 @@
         <td class="col-unit">${escapeHtml(d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "")}</td>
         <td class="col-kaz">${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
         <td class="col-icerik">${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
-        <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
+        <td style="min-width:180px">${escapeHtml(d["AÇIKLAMA"] || "")}</td>
         <td class="col-eba">${ebaCellHTML}</td>
         <td class="col-ai">${aiCellHTML}</td>
       `;
