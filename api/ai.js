@@ -1,4 +1,34 @@
 const OpenAI = require("openai").default;
+const { verifyToken } = require("./login");
+
+// ── Token doğrulama yardımcısı ────────────────────────────────────────────
+function authCheck(req, res) {
+  const auth  = req.headers["authorization"] || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!token) {
+    res.status(401).json({ error: "Oturum açmanız gerekiyor" });
+    return null;
+  }
+  const payload = verifyToken(token);
+  if (!payload) {
+    res.status(401).json({ error: "Oturum süresi dolmuş, lütfen tekrar giriş yapın" });
+    return null;
+  }
+  return payload;
+}
+
+// ── Ders yetkisi kontrolü ─────────────────────────────────────────────────
+function dersCheck(payload, course, grade, res) {
+  // dersler boşsa tüm derslere erişim (admin)
+  if (!payload.dersler || payload.dersler.length === 0) return true;
+  const yetkili = payload.dersler.some(d => d.toLowerCase() === (course || "").toLowerCase());
+  if (!yetkili) {
+    res.status(403).json({ error: `"${course}" dersi için yetkiniz yok` });
+    return false;
+  }
+  return true;
+}
+
 
 // ─── Bloom Taksonomisi ────────────────────────────────────────────────────────
 const BLOOM_MAP = {
@@ -477,6 +507,10 @@ module.exports = async function handler(req, res) {
     if (req.method !== "POST") return res.status(405).json({ title: "Hata", error: "Method not allowed" });
     if (!process.env.OPENAI_API_KEY) return res.status(500).json({ title: "AI Hatası", error: "OPENAI_API_KEY bulunamadı" });
 
+    // ── Kimlik doğrulama ─────────────────────────────────────────────────
+    const user = authCheck(req, res);
+    if (!user) return;
+
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const row = req.body || {};
 
@@ -488,6 +522,9 @@ module.exports = async function handler(req, res) {
     let   desc        = String(row["AÇIKLAMA"] ?? "").trim();
     if (row.forceChoiceText) desc = String(row.forceChoiceText).trim();
     const ebaUrl      = String(row["EBA_URL"] ?? "").trim();
+
+    // ── Ders yetkisi kontrolü ─────────────────────────────────────────────
+    if (!dersCheck(user, course, grade, res)) return;
 
     // ── PROMPT MODU: Yazara kopyalanabilir prompt üret ───────────────────────
     if (row.promptMode === true) {
@@ -901,6 +938,10 @@ module.exports.buildHandler = async function handler(req, res) {
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
     if (!process.env.OPENAI_API_KEY) return res.status(500).json({ error: "OPENAI_API_KEY bulunamadı" });
 
+    // ── Kimlik doğrulama ─────────────────────────────────────────────────
+    const user = authCheck(req, res);
+    if (!user) return;
+
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const row = req.body || {};
 
@@ -915,6 +956,9 @@ module.exports.buildHandler = async function handler(req, res) {
     const bloomLevel  = detectBloomLevel(outcome);
     const cogProfile  = getCognitiveProfile(grade);
     const templateKey = row.forceTemplate || selectBestTemplate(bloomLevel, mode, desc);
+
+    // Ders yetkisi kontrolü
+    if (!dersCheck(user, course, grade, res)) return;
 
     // Video içerik kontrolü
     if (isVideoContent(contentType, templateKey)) {
