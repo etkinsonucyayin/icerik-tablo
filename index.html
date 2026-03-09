@@ -717,6 +717,7 @@
       data = parseCSV(text, ";");
       data = data.filter(d => d["SINIF"] && String(d["SINIF"]).trim().match(/^\d+$/));
       statusEl.textContent = `Toplam: ${data.length} kayıt`;
+      console.log("CSV yüklendi, satır:", data.length, "İlk satır:", data[0]);
       initFilters();
     })
     .catch(err => {
@@ -792,12 +793,13 @@
 
       courseSelect.innerHTML =
         `<option value="">Seçiniz</option>` +
-        courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+        courses.map(c => `<option value="${c}">${escapeHtml(c)}</option>`).join("");
     };
 
     courseSelect.onchange = () => {
       qInput.value = "";
       qInput.disabled = !(gradeSelect.value && courseSelect.value);
+      console.log("Ders seçildi:", courseSelect.value, "Sınıf:", gradeSelect.value);
       applyFilterAndRender();
     };
 
@@ -819,7 +821,7 @@
 
     filtered = data.filter(d =>
       String(d["SINIF"]).trim() === grade &&
-      (d["DERS ADI"] || "").trim() === course
+      (d["DERS ADI"] || "").trim() === courseSelect.value.trim()
     );
 
     if (q) {
@@ -846,6 +848,7 @@
       const aiPasifMi = (aiDurumu === "yok");
 
       // Eğer "yok" ise butonu tıklanamaz (disabled) ve soluk yapıyoruz
+      const isVideoMode = /video|belgesel|film|animasyon|sanal.*tur/i.test(d["E-İÇERİK TÜRÜ"] || "");
       const aiCellHTML = aiPasifMi
         ? `<div class="action-cell"><button class="ai-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Bu içerik için AI desteği mevcut değil">Yok</button></div>`
         : (isVideoMode
@@ -860,7 +863,6 @@
             <button class="ai-btn" data-key="${escapeHtml(key)}">AI</button>
            </div>`)
 
-      const isVideoMode = /video|belgesel|film|animasyon|sanal.*tur/i.test(d["E-İÇERİK TÜRÜ"] || "");
       const ebaUrl = String(d["EBA_URL"] || "").trim();
       const ebaCellHTML = ebaUrl
         ? `<a class="eba-btn" href="${escapeHtml(ebaUrl)}" target="_blank" rel="noopener noreferrer" title="EBA'da örnek içeriği görüntüle">📘 Görüntüle</a>`
