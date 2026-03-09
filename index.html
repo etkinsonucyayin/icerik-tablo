@@ -121,8 +121,7 @@
   .col-kaz{ width:320px; }
   .col-icerik{ width:170px; }
   .col-eba{ width:90px; text-align:center; }
-  .col-aciklama{ min-width:220px; }
-  .col-ai{ width:108px; text-align:right; }
+  .col-ai{ width:210px; text-align:right; }
 
   .eba-btn{
     display:inline-flex;
@@ -149,19 +148,18 @@
   }
 
   /* İkili buton grubu */
-  .action-cell{ display:flex; flex-direction:column; gap:4px; align-items:stretch; width:100%; }
+  .action-cell{ display:flex; gap:5px; justify-content:flex-end; align-items:center; flex-wrap:wrap; }
 
   .ai-btn{
     border:1px solid rgba(79,140,255,.45);
     background: linear-gradient(135deg, rgba(79,140,255,.95), rgba(79,140,255,.55));
     color:white;
     font-weight:700;
-    padding:6px 4px;
-    border-radius:9px;
+    padding:8px 10px;
+    border-radius:12px;
     cursor:pointer;
-    text-align:center;
-    font-size:12px;
-    box-shadow:0 4px 12px rgba(79,140,255,.22);
+    width:56px;
+    box-shadow:0 8px 18px rgba(79,140,255,.22);
   }
   .ai-btn:hover{ filter:brightness(1.04); }
   .ai-btn:disabled{ opacity:.7; cursor:not-allowed; }
@@ -171,12 +169,12 @@
     background: linear-gradient(135deg, rgba(130,100,230,.9), rgba(100,70,200,.6));
     color:white;
     font-weight:700;
-    padding:6px 4px;
-    border-radius:9px;
+    padding:8px 7px;
+    border-radius:12px;
     cursor:pointer;
     font-size:11px;
-    text-align:center;
-    box-shadow:0 4px 10px rgba(130,100,230,.2);
+    white-space:nowrap;
+    box-shadow:0 6px 14px rgba(130,100,230,.2);
   }
   .prompt-btn:hover{ filter:brightness(1.08); }
 
@@ -185,12 +183,12 @@
     background: linear-gradient(135deg, rgba(34,160,70,.92), rgba(22,110,48,.7));
     color:white;
     font-weight:700;
-    padding:6px 4px;
-    border-radius:9px;
+    padding:8px 7px;
+    border-radius:12px;
     cursor:pointer;
     font-size:11px;
-    text-align:center;
-    box-shadow:0 4px 10px rgba(34,160,70,.2);
+    white-space:nowrap;
+    box-shadow:0 6px 14px rgba(34,160,70,.2);
   }
   .hayat-btn:hover{ filter:brightness(1.1); transform:translateY(-1px); transition:.15s; }
   .hayat-btn.passive{
@@ -425,35 +423,98 @@
 </head>
 
 <body>
-  <!-- Telefon dikey uyarısı -->
-  <div id="rotateOverlay" style="
-    display:none; position:fixed; inset:0; z-index:9999;
-    background:#0b1220; flex-direction:column;
-    align-items:center; justify-content:center; gap:20px;
+
+  <!-- ═══ GİRİŞ EKRANI ════════════════════════════════════════════════════ -->
+  <div id="loginScreen" style="
+    position:fixed; inset:0; z-index:8000;
+    background:linear-gradient(135deg,#060d1a 0%,#0d1e35 60%,#091628 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-family:inherit;
   ">
-    <div style="font-size:64px; animation:rotAnim 1.8s ease-in-out infinite;">📱</div>
-    <div style="color:#eaf0ff; font-size:18px; font-weight:700; text-align:center; padding:0 30px;">
-      Lütfen telefonunuzu yatay çevirin
-    </div>
-    <div style="color:#a9b6d6; font-size:13px; text-align:center; padding:0 40px; line-height:1.6;">
-      Bu tablo yatay görünümde daha iyi çalışır
+    <div style="
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:24px;
+      padding:40px 36px;
+      width:min(380px,92vw);
+      box-shadow:0 24px 64px rgba(0,0,0,.5);
+      display:flex; flex-direction:column; gap:20px;
+    ">
+      <!-- Logo/başlık -->
+      <div style="text-align:center; margin-bottom:4px;">
+        <div style="font-size:36px; margin-bottom:10px;">📚</div>
+        <div style="color:#eaf0ff; font-size:20px; font-weight:800; letter-spacing:-.3px;">E-İçerik Tablosu</div>
+        <div style="color:#a9b6d6; font-size:13px; margin-top:4px;">MEB TTKB — Yazar Girişi</div>
+      </div>
+
+      <!-- Form -->
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div>
+          <label style="color:#a9b6d6; font-size:12px; font-weight:600; display:block; margin-bottom:6px;">KULLANICI ADI</label>
+          <input id="loginUser" type="text" autocomplete="username" placeholder="kullanıcı adınız"
+            style="width:100%; box-sizing:border-box; background:rgba(255,255,255,.07);
+            border:1px solid rgba(255,255,255,.15); border-radius:12px;
+            color:#eaf0ff; font-size:15px; padding:12px 14px; outline:none;
+            transition:.2s;" />
+        </div>
+        <div>
+          <label style="color:#a9b6d6; font-size:12px; font-weight:600; display:block; margin-bottom:6px;">ŞİFRE</label>
+          <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••"
+            style="width:100%; box-sizing:border-box; background:rgba(255,255,255,.07);
+            border:1px solid rgba(255,255,255,.15); border-radius:12px;
+            color:#eaf0ff; font-size:15px; padding:12px 14px; outline:none;
+            transition:.2s;" />
+        </div>
+      </div>
+
+      <!-- Hata mesajı -->
+      <div id="loginErr" style="
+        display:none; background:rgba(220,60,60,.15);
+        border:1px solid rgba(220,60,60,.3); border-radius:10px;
+        color:#ff8a8a; font-size:13px; padding:10px 14px; text-align:center;
+      "></div>
+
+      <!-- Giriş butonu -->
+      <button id="loginBtn" style="
+        background:linear-gradient(135deg,rgba(45,125,210,.95),rgba(30,90,160,.8));
+        border:1px solid rgba(79,140,255,.4); border-radius:14px;
+        color:white; font-size:15px; font-weight:700;
+        padding:14px; cursor:pointer; width:100%;
+        box-shadow:0 8px 24px rgba(45,125,210,.3);
+        transition:.2s;
+      ">Giriş Yap</button>
+
+      <div style="color:#4a5a78; font-size:11px; text-align:center; line-height:1.5;">
+        Erişim için sistem yöneticisiyle iletişime geçin
+      </div>
     </div>
   </div>
-  <style>
-    @keyframes rotAnim {
-      0%,100% { transform:rotate(0deg); }
-      40%,60%  { transform:rotate(90deg); }
-    }
-  </style>
 
-
-  <div class="wrap">
+  <div class="wrap" id="mainApp" style="display:none;">
     <div class="header">
       <div class="title">
         <h1>E-İçerik Tablosu</h1>
         <p>Sınıf ve ders seç, tabloyu filtrele, AI ile senaryo dokümanı üret.</p>
       </div>
-      <div class="badge" id="status">Veriler yükleniyor…</div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+        <div id="userBadge" style="
+          display:none; align-items:center; gap:10px;
+          background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+          border-radius:12px; padding:6px 14px 6px 10px;
+        ">
+          <span style="font-size:16px;">👤</span>
+          <div>
+            <div id="userNameDisplay" style="color:#eaf0ff; font-size:13px; font-weight:700; line-height:1.2;"></div>
+            <div id="userDersDisplay" style="color:#a9b6d6; font-size:11px; line-height:1.2;"></div>
+          </div>
+          <button onclick="doLogout()" style="
+            background:rgba(220,60,60,.2); border:1px solid rgba(220,60,60,.3);
+            border-radius:8px; color:#ff8a8a; font-size:11px; font-weight:700;
+            padding:4px 10px; cursor:pointer; margin-left:6px;
+          ">Çıkış</button>
+        </div>
+        <div class="badge" id="status">Veriler yükleniyor…</div>
+      </div>
     </div>
 
     <div class="card">
@@ -636,6 +697,216 @@
   </button>
 
 <script>
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ── AUTH: Giriş / Token / Oturum Yönetimi ──────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const TOKEN_KEY = "icerik_token";
+  const USER_KEY  = "icerik_user";
+
+  // Token'ı localStorage'a kaydet
+  function saveSession(token, userData) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(userData));
+  }
+
+  // Oturumu temizle ve giriş ekranına dön
+  function doLogout() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    location.reload();
+  }
+
+  // Kayıtlı token'ı döndür
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY) || "";
+  }
+
+  // Kayıtlı kullanıcı verisini döndür
+  function getStoredUser() {
+    try { return JSON.parse(localStorage.getItem(USER_KEY) || "null"); }
+    catch { return null; }
+  }
+
+  // API çağrılarına Authorization header ekle
+  function authHeaders() {
+    return {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + getToken(),
+    };
+  }
+
+  // Giriş ekranını gizle, uygulamayı göster
+  function showApp(userData) {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("mainApp").style.display = "";
+
+    // Kullanıcı badge'ini doldur
+    const badge = document.getElementById("userBadge");
+    badge.style.display = "flex";
+    document.getElementById("userNameDisplay").textContent = userData.name || userData.username;
+    const dersler = userData.dersler || [];
+    document.getElementById("userDersDisplay").textContent =
+      dersler.length > 0 ? dersler.join(", ") : "Tüm dersler";
+
+    // Ders dropdown'unu kısıtla
+    applyDersKisitlama(userData.dersler || [], userData.siniflar || []);
+  }
+
+  // courseSelect ve gradeSelect'i yetkili derslerle sınırla
+  function applyDersKisitlama(yetkiliDersler, yetkiliSiniflar) {
+    if (yetkiliDersler.length === 0) return; // admin — kısıtlama yok
+
+    // gradeSelect değişince kurs listesini filtrele
+    const origGradeChange = gradeSelect.onchange;
+    gradeSelect.onchange = function() {
+      if (origGradeChange) origGradeChange.call(this);
+
+      // Küçük gecikme — orijinal onChange course'ları doldursun
+      setTimeout(() => {
+        filterCourseOptions(yetkiliDersler);
+      }, 10);
+    };
+
+    // Sınıf kısıtlaması varsa grade seçeneklerini filtrele
+    if (yetkiliSiniflar.length > 0) {
+      setTimeout(() => {
+        Array.from(gradeSelect.options).forEach(opt => {
+          if (opt.value && !yetkiliSiniflar.includes(opt.value)) {
+            opt.remove();
+          }
+        });
+      }, 50);
+    }
+  }
+
+  function filterCourseOptions(yetkiliDersler) {
+    Array.from(courseSelect.options).forEach(opt => {
+      if (!opt.value) return; // "Seçiniz" seçeneğini dokunma
+      const match = yetkiliDersler.some(
+        d => d.toLowerCase() === opt.value.toLowerCase()
+      );
+      if (!match) opt.remove();
+    });
+
+    // Tek ders varsa otomatik seç
+    const validOpts = Array.from(courseSelect.options).filter(o => o.value);
+    if (validOpts.length === 1) {
+      courseSelect.value = validOpts[0].value;
+      courseSelect.dispatchEvent(new Event("change"));
+    }
+  }
+
+  // ── Giriş formu ─────────────────────────────────────────────────────────
+  async function doLogin() {
+    const username = document.getElementById("loginUser").value.trim();
+    const password = document.getElementById("loginPass").value;
+    const errEl    = document.getElementById("loginErr");
+    const btn      = document.getElementById("loginBtn");
+
+    if (!username || !password) {
+      errEl.textContent = "Kullanıcı adı ve şifre girin";
+      errEl.style.display = "block";
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Giriş yapılıyor…";
+    errEl.style.display = "none";
+
+    try {
+      const r = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await r.json();
+
+      if (!r.ok) {
+        errEl.textContent = data.error || "Giriş başarısız";
+        errEl.style.display = "block";
+        return;
+      }
+
+      saveSession(data.token, {
+        name: data.name,
+        username,
+        dersler: data.dersler || [],
+        siniflar: data.siniflar || [],
+      });
+      showApp(getStoredUser());
+
+    } catch(e) {
+      errEl.textContent = "Sunucuya ulaşılamadı, lütfen tekrar deneyin";
+      errEl.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Giriş Yap";
+    }
+  }
+
+  // Enter ile giriş
+  ["loginUser","loginPass"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") doLogin();
+    });
+  });
+  document.getElementById("loginBtn").onclick = doLogin;
+
+  // ── Sayfa yüklenince token kontrolü ─────────────────────────────────────
+  (function checkExistingSession() {
+    const token = getToken();
+    const user  = getStoredUser();
+    if (token && user) {
+      // Token var — doğrulamak için backend'e ping at
+      fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token_check: token }),
+      }).then(r => {
+        // 200 gelirse oturumu göster, 401 gelirse giriş ekranı kalır
+        if (r.ok) {
+          showApp(user);
+        } else {
+          doLogout();
+        }
+      }).catch(() => {
+        // Ağ hatası — token varsa yine de göster (offline toleransı)
+        showApp(user);
+      });
+    }
+    // token yoksa loginScreen zaten görünür
+  })();
+
+  // ── fetch wrapper: tüm API çağrılarına token ekle ───────────────────────
+  // Orijinal fetch'i sakla
+  const _origFetch = window.fetch;
+  window.fetch = function(url, opts = {}) {
+    // Sadece kendi API endpoint'lerimize token ekle
+    if (typeof url === "string" && url.startsWith("/api/")) {
+      opts.headers = Object.assign({}, opts.headers, {
+        "Authorization": "Bearer " + getToken(),
+      });
+    }
+    return _origFetch(url, opts);
+  };
+
+  // ── Auth hatası yakalayıcı — 401 gelince otomatik çıkış ─────────────────
+  // (handleAIClick ve handleBuildClick'in sonuçlarını da yakalar)
+  function handleAuthError(data, status) {
+    if (status === 401) {
+      alert("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.");
+      doLogout();
+      return true;
+    }
+    if (status === 403) {
+      alert(data?.error || "Bu işlem için yetkiniz yok");
+      return true;
+    }
+    return false;
+  }
+
   // -------------------- State --------------------
   let data =[];
   let filtered =[];
@@ -877,12 +1148,12 @@
         ? `<div class="action-cell"><button class="ai-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Bu içerik için AI desteği mevcut değil">Yok</button></div>`
         : (isVideoMode
           ? `<div class="action-cell">
-            <button class="hayat-btn passive" data-build-key="${escapeHtml(key)}" disabled title="Video içerikler için desteklenmiyor">🚀 Yap</button>
+            <button class="hayat-btn passive" data-build-key="${escapeHtml(key)}" disabled title="Video içerikler için desteklenmiyor">🚀 Hayata Geçir</button>
             <button class="prompt-btn" data-prompt-key="${escapeHtml(key)}">✨ Prompt</button>
             <button class="ai-btn" data-key="${escapeHtml(key)}">AI</button>
            </div>`
           : `<div class="action-cell">
-            <button class="hayat-btn" data-build-key="${escapeHtml(key)}" title="HTML5 içerik üret ve indir">🚀 Yap</button>
+            <button class="hayat-btn" data-build-key="${escapeHtml(key)}" title="HTML5 içerik üret ve indir">🚀 Hayata Geçir</button>
             <button class="prompt-btn" data-prompt-key="${escapeHtml(key)}">✨ Prompt</button>
             <button class="ai-btn" data-key="${escapeHtml(key)}">AI</button>
            </div>`)
@@ -897,7 +1168,7 @@
         <td class="col-unit">${escapeHtml(d["ÜNİTE/TEMA/ ÖĞRENME ALANI"] || "")}</td>
         <td class="col-kaz">${escapeHtml(d["KAZANIM/ÖĞRENME ÇIKTISI/BÖLÜM"] || "")}</td>
         <td class="col-icerik">${escapeHtml(d["E-İÇERİK TÜRÜ"] || "")}</td>
-        <td class="col-aciklama">${escapeHtml(d["AÇIKLAMA"] || "")}</td>
+        <td>${escapeHtml(d["AÇIKLAMA"] || "")}</td>
         <td class="col-eba">${ebaCellHTML}</td>
         <td class="col-ai">${aiCellHTML}</td>
       `;
@@ -1566,20 +1837,6 @@
   }
 
   function cssEscape(str){ return String(str).replace(/["\\]/g, "\\$&"); }
-  // ── Telefon yatay uyarısı ──────────────────────────────────────────────
-  (function checkRotate() {
-    const el = document.getElementById('rotateOverlay');
-    if (!el) return;
-    function update() {
-      const mobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 850;
-      el.style.display = (mobile && window.innerHeight > window.innerWidth) ? 'flex' : 'none';
-    }
-    window.addEventListener('resize', update);
-    window.addEventListener('orientationchange', update);
-    update();
-  })();
-
-
 </script>
 </body>
 </html>
