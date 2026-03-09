@@ -303,47 +303,98 @@ SCORM: Son boşluk doğru tamamlandığında Complete.`,
   },
 
   "video_izle_cevapla": {
-    name: "Video İzle + Sor (Etkileşimli Video)",
+    name: "Video İzle + Sor (Etkileşimli Video — Video ELİNİZDE HAZIR)",
     bloomLevels: ["anla", "uygula", "değerlendir"],
-    description: "Video belirli anlarda durur, soru sorulur, cevaba göre devam eder.",
+    description: "Hazır video var, belirli anlarda durur, soru sorulur.",
     storylineNotes: `
-STORYLINE 360 TEKNİK REHBERİ — ETKİLEŞİMLİ VİDEO
+STORYLINE 360 TEKNİK REHBERİ — ETKİLEŞİMLİ VİDEO (Video dosyası hazır)
 
 SLIDE YAPISI:
   Slide 1 → Video slide (tüm video, cue point'lerle)
-  Slide 2-N → Soru slide'ları (video durunca atlanır, sonra geri döner)
+  Slide 2-N → Soru layer'ları (video durunca açılır)
 
-VİDEO SLIDE AYARLARI:
-  - Video dosyası: MP4, H.264, 720p max, 100MB max
-  - Player controls: Yalnızca play/pause (seek bar kapalı — bilgi atlanmasın)
-  - Cue points: Her kritik bilgiden ~5 saniye sonra
-  Örn: 0:30, 1:15, 2:00, 2:45...
+VİDEO AYARLARI:
+  - Dosya: MP4, H.264, 720p max, 100MB max
+  - Seek bar: KAPALI (öğrenci atlayamasın)
+  - Cue points: Her kilit bilgiden ~5 saniye sonra
 
-SORU LAYER'LARI (Video üzerinde overlay):
-  Video cue point'e geldiğinde → Pause video + Show Layer "Soru_[N]"
-  Layer "Soru_[N]": Çoktan seçmeli veya True/False
-  Layer "Dogru_[N]": Dönüt + Resume video trigger
-  Layer "Yanlis_[N]": Dönüt + "Videoyu tekrar izle" seçeneği
+SORU LAYER'LARI:
+  Cue point'e gelince → Pause + Show Layer "Soru_[N]"
+  Layer "Dogru_[N]": Açıklayıcı 2 cümle dönüt + Resume trigger
+  Layer "Yanlis_[N]": Yönlendirici 2 cümle dönüt + Tekrar İzle seçeneği
 
 TRIGGER'LAR:
-  Video cue point 1 ulaşıldı:
-    → Pause Timeline
-    → Show Layer "Soru_1"
-  Doğru seçenek tıklandı (Soru_1 layer):
-    → Show Layer "Dogru_1"
-  Layer "Dogru_1" timeline complete:
-    → Hide Layer "Soru_1"
-    → Hide Layer "Dogru_1"
-    → Resume Timeline (video devam eder)
+  Cue point N ulaşıldı → Pause Timeline → Show Layer "Soru_N"
+  Doğru seçenek tıklandı → Show Layer "Dogru_N"
+  Layer "Dogru_N" timeline complete → Hide tüm layer → Resume Timeline
 
-SCORM: Video bitince + tüm sorular cevaplandıysa Complete.
-EBA: Altyazı (SRT) zorunlu. Video max 100MB.`,
+SCORM: Video + tüm sorular tamamlandıysa Complete.
+EBA: Altyazı (SRT) ZORUNLU. Video max 100MB.`,
+  },
+
+  "video_uretim_senaryosu": {
+    name: "Video/Animasyon/Belgesel/Sanal Tur ÜRETİM SENARYOSU (Video henüz yok — üretilmesi gerekiyor)",
+    bloomLevels: ["hatırla", "anla", "uygula", "analiz", "değerlendir"],
+    description: "Açıklamada video/animasyon/belgesel/sanal tur üretilmesi planlanmış. Önce prodüksiyon senaryosu, sonra Storyline etkileşim planı.",
+    storylineNotes: `
+!! BU İÇERİK İÇİN ÖNCE VİDEO / ANİMASYON / SANAL TUR ÜRETİLMESİ GEREKİYOR.
+Senaryo iki belgeden oluşur:
+  BELGE 1 → Prodüksiyon Senaryosu   (yönetmene / animatöre / sanal tur üreticisine)
+  BELGE 2 → Storyline Etkileşim Planı   (video hazırlandıktan sonra Storyline'da uygulanır)
+
+════════════════════════════════════════════════
+BELGE 1 FORMATI — Her sahne şu yapıda yazılır:
+════════════════════════════════════════════════
+
+┌─ SAHNE [N] ─────────────────────────────────────────────────────────────┐
+│ Süre: ~[X] saniye  |  Tür: [2D Animasyon / 3D / Gerçek Çekim / Sanal Tur]
+│
+│ GÖRÜNTÜ:
+│   [Ekranda ne var — karakter, arka plan, kamera açısı, hareket yönü]
+│   [Geçiş efekti / zoom / vurgu animasyonu]
+│
+│ MÜZİK / SES EFEKTİ:
+│   [Arka plan tonu: merak / heyecan / sakin / dramatik]
+│   [Varsa ses efekti: tıklama, ding, doğa sesi vb.]
+│
+│ SESLENDİRME (sanatçıya verilecek tam metin — noktalama dahil):
+│   "[Virgül ve nokta tempoyu belirler. *Yıldız* = vurgulu okuma.]"
+│
+│ ALTYAZI (SRT dosyasına — seslendirmeyle birebir aynı):
+│   "[EBA erişilebilirlik zorunluluğu]"
+│
+│ GÖRSEL NOTLAR (animatöre / sanat yönetmenine):
+│   [Renk paleti, karakter özellikleri, prop'lar, mekan detayı]
+└─────────────────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════
+BELGE 2 FORMATI — Storyline Etkileşim Planı
+════════════════════════════════════════════════
+(Video hazırlandıktan sonra Storyline'a aktarımda kullanılır)
+
+  CUE POINT [N] — [Dakika:Saniye]
+  Soru: [Tam soru metni]
+  A) [Seçenek]   B) [Seçenek]   C) [Seçenek — gerekirse]
+  Doğru Cevap: [Harf]
+  Doğru Dönüt: "[2 cümle — neden doğru + kazanıma bağlantı]"
+  Yanlış Dönüt: "[2 cümle — yanılgıyı düzelt + doğruya yönlendir]"
+
+SCORM: Video + tüm sorular tamamlandıysa Complete.
+EBA: SRT altyazı ZORUNLU. MP4 H.264 720p max 100MB.`,
   },
 };
 
 function selectBestTemplate(bloomLevel, mode, desc = "") {
   const d = desc.toLowerCase();
-  if (mode === "video") return "video_izle_cevapla";
+
+  // Video modu: elinde HAZIR MI yoksa ÜRETİLECEK Mİ?
+  if (mode === "video") {
+    // "hazırlanır/üretilecek/yapılacak/oluşturulacak" → önce prodüksiyon senaryosu gerekli
+    const needsProduction = /hazırlan|üretil|yapılacak|oluşturul|animasyon.*hazır|belgesel.*hazır|sanal.*tur.*hazır/.test(d);
+    return needsProduction ? "video_uretim_senaryosu" : "video_izle_cevapla";
+  }
+  // Video modu olmasa bile açıklamada üretim sinyali varsa
+  if (/animasyon|belgesel|sanal (müze|tur)/.test(d)) return "video_uretim_senaryosu";
   if (d.includes("sırala") || d.includes("adım") || d.includes("süreç") || d.includes("eşleştir")) return "surukle_birak_siralama";
   if (d.includes("boşluk") || d.includes("tamamla") || d.includes("doldur")) return "bosluk_doldurma";
   if (d.includes("karar") || d.includes("senaryo") || d.includes("durum") || d.includes("vaka")) return "senaryo_dallari";
@@ -382,6 +433,7 @@ module.exports = async function handler(req, res) {
     const bloomLevel = detectBloomLevel(outcome);
     const cogProfile = getCognitiveProfile(grade);
     const codeInfo   = analyzeOutcomeCode(outcome);
+    // AI'ın videoStatus tespitini templateKey seçimine yansıt (Aşama 1'den önce)
     const templateKey = row.forceTemplate || selectBestTemplate(bloomLevel, mode, desc);
     const template    = TEMPLATE_LIBRARY[templateKey] || TEMPLATE_LIBRARY["siniflandirma_oyunu"];
 
@@ -404,6 +456,13 @@ Ders: ${course}, Sınıf: ${grade}, Ünite: ${unit}
   "tymm_value": "TYMM değeri",
   "suggestedNarrative": "Yaratıcı içerik çerçevesi — kim, nerede, ne yapıyor",
   "redLines": ["X kavramından bahsetme çünkü [somut neden]"],
+  "videoStatus": "needs_production VEYA exists_ready — İçerik açıklamasında video/animasyon/belgesel/sanal tur ÜRETILMESINDEN söz ediliyorsa needs_production yaz, hazır bir videodan söz ediliyorsa exists_ready yaz",
+  "videoScenes": [
+    {"sahneNo": 1, "sure": "~30 saniye", "goruntu": "Ekranda ne görünüyor — karakter, arka plan, kamera açısı", "seslendirme": "Seslendirme metni tam cümle — noktalama dahil", "gorselNot": "Animatöre renk/karakter/efekt notu"},
+    {"sahneNo": 2, "sure": "~30 saniye", "goruntu": "...", "seslendirme": "...", "gorselNot": "..."},
+    {"sahneNo": 3, "sure": "~30 saniye", "goruntu": "...", "seslendirme": "...", "gorselNot": "..."},
+    {"sahneNo": 4, "sure": "~30 saniye", "goruntu": "...", "seslendirme": "...", "gorselNot": "..."}
+  ],
   "sampleItems": [
     {"content": "İfade/soru/durum metni tam olarak", "category": "Doğru kategori adı", "isCorrectCategory": true, "feedback": "Neden bu kategoride — 1 somut cümle"},
     {"content": "İfade 2", "category": "Yanlış kategori", "isCorrectCategory": false, "feedback": "Açıklama"},
@@ -420,7 +479,7 @@ Ders: ${course}, Sınıf: ${grade}, Ünite: ${unit}
     let ped = {};
     try {
       const r1 = await openai.chat.completions.create({
-        model: "gpt-4o", temperature: 0.1, max_tokens: 1800,
+        model: "gpt-4o", temperature: 0.1, max_tokens: 2200,
         messages: [{ role: "user", content: analysisPrompt }],
       });
       const raw1 = (r1.choices?.[0]?.message?.content || "{}").replace(/```json|```/g, "").trim();
@@ -428,6 +487,24 @@ Ders: ${course}, Sınıf: ${grade}, Ünite: ${unit}
     } catch (_) {
       ped = { bloomLevel, commonMisconceptions: [], sampleItems: [], coreConceptsToTeach: [], redLines: [] };
     }
+
+    // AI'ın videoStatus tespitini şablon seçimine uygula (açıklama yetersiz kaldıysa)
+    const finalTemplateKey = row.forceTemplate || (
+      ped.videoStatus === "needs_production" ? "video_uretim_senaryosu" :
+      ped.videoStatus === "exists_ready"     ? "video_izle_cevapla"     :
+      templateKey
+    );
+    const finalTemplate = TEMPLATE_LIBRARY[finalTemplateKey] || template;
+
+    // Üretim senaryosu varsa videoScenes metnini hazırla
+    const videoScenesText = Array.isArray(ped.videoScenes) && ped.videoScenes.length > 0
+      ? ped.videoScenes.map(s =>
+          `  SAHNE ${s.sahneNo} (~${s.sure}):\n` +
+          `    Görüntü: ${s.goruntu}\n` +
+          `    Seslendirme: "${s.seslendirme}"\n` +
+          `    Görsel not: ${s.gorselNot}`
+        ).join("\n\n")
+      : "";
 
     const sampleItemsText = Array.isArray(ped.sampleItems)
       ? ped.sampleItems.map((q, i) =>
@@ -480,8 +557,9 @@ ${misconceptionsText}
 ## AI'NIN ÜRETTİĞİ HAZIR İÇERİKLER (Revize edilebilir, değiştirilebilir)
 ${sampleItemsText}
 
-## SEÇİLEN STORYLINE ŞABLONU: ${template.name}
-${template.storylineNotes}
+${videoScenesText ? `## AI'NIN ÜRETTİĞİ VİDEO/ANİMASYON SAHNE TASLAKLARI\n(Yönetmene / animatöre iletilecek — revize edilebilir)\n${videoScenesText}\n` : ""}
+## SEÇİLEN ŞABLON: ${finalTemplate.name}
+${finalTemplate.storylineNotes}
 
 ---
 
@@ -573,8 +651,9 @@ Her ekran için şu yapıyı kullan:
         suggestedNarrative: ped.suggestedNarrative || null,
         outcomeCode: codeInfo?.raw || null,
         cognitiveStage: getCognitiveProfile(grade).stage,
-        templateUsed: templateKey,
-        templateName: template.name,
+        templateUsed: finalTemplateKey,
+        templateName: finalTemplate.name,
+        videoStatus: ped.videoStatus || null,
         sampleItems: ped.sampleItems || [],
         ebaUrl: ebaUrl || null,
       },
