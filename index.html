@@ -408,17 +408,99 @@
     select{ min-width:160px; }
     .header{ align-items:flex-start; flex-direction:column; }
   }
+
+  /* ── Giriş ekranı ── */
+  #loginScreen{
+    position:fixed; inset:0; z-index:8000;
+    background:linear-gradient(135deg,#060d1a 0%,#0d1e35 60%,#091628 100%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .login-box{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:24px; padding:40px 36px;
+    width:min(380px,92vw);
+    box-shadow:0 24px 64px rgba(0,0,0,.5);
+    display:flex; flex-direction:column; gap:20px;
+  }
+  .login-field label{ color:#a9b6d6; font-size:12px; font-weight:600; display:block; margin-bottom:6px; }
+  .login-field input{
+    width:100%; box-sizing:border-box;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15);
+    border-radius:12px; color:#eaf0ff; font-size:15px; padding:12px 14px; outline:none;
+  }
+  .login-field input:focus{ border-color:rgba(79,140,255,.5); }
+  #loginErr{
+    display:none; background:rgba(220,60,60,.15);
+    border:1px solid rgba(220,60,60,.3); border-radius:10px;
+    color:#ff8a8a; font-size:13px; padding:10px 14px; text-align:center;
+  }
+  #loginBtn{
+    background:linear-gradient(135deg,rgba(45,125,210,.95),rgba(30,90,160,.8));
+    border:1px solid rgba(79,140,255,.4); border-radius:14px;
+    color:white; font-size:15px; font-weight:700;
+    padding:14px; cursor:pointer; width:100%;
+    box-shadow:0 8px 24px rgba(45,125,210,.3);
+  }
+  #loginBtn:hover{ filter:brightness(1.08); }
+  #loginBtn:disabled{ opacity:.6; cursor:not-allowed; }
+  #userBadge{
+    display:none; align-items:center; gap:10px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+    border-radius:12px; padding:6px 14px 6px 10px;
+  }
+  #logoutBtn{
+    background:rgba(220,60,60,.2); border:1px solid rgba(220,60,60,.3);
+    border-radius:8px; color:#ff8a8a; font-size:11px; font-weight:700;
+    padding:4px 10px; cursor:pointer; margin-left:6px;
+  }
+
 </style>
 </head>
 
 <body>
-  <div class="wrap">
+
+  <!-- ═══ GİRİŞ EKRANI ══════════════════════════════════════════ -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <div style="text-align:center">
+        <div style="font-size:36px;margin-bottom:8px">📚</div>
+        <div style="color:#eaf0ff;font-size:20px;font-weight:800">E-İçerik Tablosu</div>
+        <div style="color:#a9b6d6;font-size:13px;margin-top:4px">MEB TTKB — Yazar Girişi</div>
+      </div>
+      <div class="login-field">
+        <label>KULLANICI ADI</label>
+        <input id="loginUser" type="text" autocomplete="username" placeholder="kullanıcı adınız">
+      </div>
+      <div class="login-field">
+        <label>ŞİFRE</label>
+        <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <div id="loginErr"></div>
+      <button id="loginBtn">Giriş Yap</button>
+      <div style="color:#4a5a78;font-size:11px;text-align:center">
+        Erişim için sistem yöneticisiyle iletişime geçin
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="mainApp" style="display:none">
     <div class="header">
       <div class="title">
         <h1>E-İçerik Tablosu</h1>
         <p>Sınıf ve ders seç, tabloyu filtrele, AI ile senaryo dokümanı üret.</p>
       </div>
-      <div class="badge" id="status">Veriler yükleniyor…</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <div id="userBadge">
+          <span style="font-size:16px">👤</span>
+          <div>
+            <div id="userNameEl" style="color:#eaf0ff;font-size:13px;font-weight:700;line-height:1.2"></div>
+            <div id="userDersEl" style="color:#a9b6d6;font-size:11px;line-height:1.2"></div>
+          </div>
+          <button id="logoutBtn" onclick="doLogout()">Çıkış</button>
+        </div>
+        <div class="badge" id="status">Veriler yükleniyor…</div>
+      </div>
     </div>
 
     <div class="card">
@@ -601,6 +683,115 @@
   </button>
 
 <script>
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // AUTH
+  // ═══════════════════════════════════════════════════════════════════════
+  const TOKEN_KEY = "icerik_token";
+  const USER_KEY  = "icerik_user";
+
+  function saveSession(token, userData) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(userData));
+  }
+  function doLogout() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    location.reload();
+  }
+  function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
+  function getStoredUser() {
+    try { return JSON.parse(localStorage.getItem(USER_KEY) || "null"); }
+    catch { return null; }
+  }
+
+  function showApp(userData) {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("mainApp").style.display = "";
+    const badge = document.getElementById("userBadge");
+    badge.style.display = "flex";
+    document.getElementById("userNameEl").textContent = userData.name || userData.username;
+    const dersler = userData.dersler || [];
+    document.getElementById("userDersEl").textContent = dersler.length > 0 ? dersler.join(", ") : "Tüm dersler";
+    applyDersKisitlama(userData.dersler || [], userData.siniflar || []);
+  }
+
+  function applyDersKisitlama(yetkiliDersler, yetkiliSiniflar) {
+    if (yetkiliDersler.length === 0) return;
+    const origChange = gradeSelect.onchange;
+    gradeSelect.onchange = function() {
+      if (origChange) origChange.call(this);
+      setTimeout(() => {
+        Array.from(courseSelect.options).forEach(opt => {
+          if (!opt.value) return;
+          if (!yetkiliDersler.some(d => d.toLowerCase() === opt.value.toLowerCase())) opt.remove();
+        });
+        const valid = Array.from(courseSelect.options).filter(o => o.value);
+        if (valid.length === 1) { courseSelect.value = valid[0].value; courseSelect.dispatchEvent(new Event("change")); }
+      }, 20);
+    };
+    if (yetkiliSiniflar.length > 0) {
+      setTimeout(() => {
+        Array.from(gradeSelect.options).forEach(opt => {
+          if (opt.value && !yetkiliSiniflar.includes(opt.value)) opt.remove();
+        });
+      }, 50);
+    }
+  }
+
+  async function doLogin() {
+    const username = document.getElementById("loginUser").value.trim();
+    const password = document.getElementById("loginPass").value;
+    const errEl    = document.getElementById("loginErr");
+    const btn      = document.getElementById("loginBtn");
+    if (!username || !password) { errEl.textContent = "Kullanıcı adı ve şifre girin"; errEl.style.display = "block"; return; }
+    btn.disabled = true; btn.textContent = "Giriş yapılıyor…"; errEl.style.display = "none";
+    try {
+      const r = await fetch("/api/login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await r.json();
+      if (!r.ok) { errEl.textContent = data.error || "Giriş başarısız"; errEl.style.display = "block"; return; }
+      saveSession(data.token, { name: data.name, username, dersler: data.dersler || [], siniflar: data.siniflar || [] });
+      showApp(getStoredUser());
+    } catch(e) {
+      errEl.textContent = "Sunucuya ulaşılamadı"; errEl.style.display = "block";
+    } finally {
+      btn.disabled = false; btn.textContent = "Giriş Yap";
+    }
+  }
+
+  ["loginUser","loginPass"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+  });
+  document.getElementById("loginBtn").onclick = doLogin;
+
+  // Sayfa açılınca mevcut token kontrolü
+  (function() {
+    const token = getToken(); const user = getStoredUser();
+    if (!token || !user) return;
+    fetch("/api/login", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ token_check: token }) })
+      .then(r => { if (r.ok) showApp(user); else doLogout(); })
+      .catch(() => showApp(user));
+  })();
+
+  // Tüm /api/ isteklerine token ekle
+  const _origFetch = window.fetch;
+  window.fetch = function(url, opts={}) {
+    if (typeof url === "string" && url.startsWith("/api/")) {
+      opts.headers = Object.assign({}, opts.headers, { "Authorization": "Bearer " + getToken() });
+    }
+    return _origFetch(url, opts);
+  };
+
+  // 401/403 otomatik çıkış
+  function handleAuthError(data, status) {
+    if (status === 401) { alert("Oturumunuz sona erdi. Lütfen tekrar giriş yapın."); doLogout(); return true; }
+    if (status === 403) { alert(data?.error || "Bu işlem için yetkiniz yok"); return true; }
+    return false;
+  }
+
   // -------------------- State --------------------
   let data =[];
   let filtered =[];
